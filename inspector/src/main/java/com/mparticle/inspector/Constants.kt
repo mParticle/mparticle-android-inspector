@@ -1,30 +1,34 @@
 package com.mparticle.inspector
 
-import com.mparticle.inspector.models.*
+import com.mparticle.inspector.events.*
 
 
-val valTitle = 0;
-val valMessage = 1
-val valMessageTable = 2
-val valNetworkRequest = 3
-val valApiCall = 4
-val valKit = 5
-val valStateGeneric = 6
-val valStateCurrentUser = 7
-val valStateAllUsers = 8
-val valStateStatus = 9
+enum class EventViewType {
+    valTitle,
+    valMessage,
+    valMessageTable,
+    valNetworkRequest,
+    valApiCall,
+    valKit,
+    valStateGeneric,
+    valStateCurrentUser,
+    valStateList,
+    valStateStatus,
+    valChainTitle,
+    valNext
+}
 
 
-fun Event.getDtoType() : Int {
+fun Event.getDtoType() : EventViewType {
     return when (this) {
-        is Title -> valTitle
-        is NetworkRequest -> valNetworkRequest
-        is ApiCall -> valApiCall
-        is Kit -> valKit
-        is MessageQueued -> valMessage
-        is StateGeneric -> valStateGeneric
-        is MessageTable -> valMessageTable
-        is ChainTitle -> -1
+        is CategoryTitle -> EventViewType.valTitle
+        is NetworkRequest -> EventViewType.valNetworkRequest
+        is ApiCall -> EventViewType.valApiCall
+        is Kit -> EventViewType.valKit
+        is MessageEvent -> EventViewType.valMessage
+        is StateEvent -> EventViewType.valStateGeneric
+        is MessageTable -> EventViewType.valMessageTable
+        is ChainTitle -> EventViewType.valChainTitle
         else -> throw RuntimeException("${javaClass.simpleName} not implemented for ViewType")
     }
 }
@@ -35,7 +39,7 @@ fun Event.getShortName(): String {
         is ApiCall -> "API"
         is Kit -> "kit"
         is KitApiCall -> "kit API"
-        is MessageQueued -> "msg"
+        is MessageEvent -> "msg"
         is MessageTable -> "msg"
         else -> "no title :("
     }

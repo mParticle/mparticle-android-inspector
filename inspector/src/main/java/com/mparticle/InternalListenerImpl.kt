@@ -324,6 +324,8 @@ class InternalListenerImpl : com.mparticle.InternalListener() {
                                         .let { listCopy ->
                                             chaseConnection(parentId, listCopy, masterMap)
                                         }
+                            } else {
+                                objectChains.add(currentChain)
                             }
                         }
                     } else {
@@ -334,6 +336,7 @@ class InternalListenerImpl : com.mparticle.InternalListener() {
                 outputMap.put(id, objectChains)
             }
         }
+
         processGraphToConnections(childrensParentsInternalCopy, childrensParentsLocal)
         processGraphToConnections(parentsChildrenInternalCopy, parentsChildrenLocal)
 

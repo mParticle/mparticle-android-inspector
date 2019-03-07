@@ -8,7 +8,9 @@ import com.mparticle.InternalListenerImpl
 import com.mparticle.ListenerImplementation
 import com.mparticle.inspector.*
 import com.mparticle.inspector.customviews.Status
-import com.mparticle.inspector.models.*
+import com.mparticle.inspector.events.*
+import com.mparticle.inspector.viewholders.*
+import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.visible
 
 class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTime: Long, private var itemId: Int, val listenerImplementation: ListenerImplementation) : BaseListAdapter(context, startTime, displayCallback) {
@@ -24,17 +26,17 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
 
     fun initialize() {
         listenerImplementation.addCompositesUpdatedListener(true) { childrensParents, parentsChildren ->
-            val chains = ArrayList<LinkedHashSet<Identified>>()
+            val chains = ArrayList<LinkedHashSet<ChainableEvent>>()
             childrensParents[itemId]?.forEach { chains.add(it) }
             parentsChildren[itemId]?.forEach { chains.add(LinkedHashSet(it.reversed()))}
 
-            val uniqueChains = chains.fold(ArrayList<LinkedHashSet<Identified>>()) { acc, set ->
+            val uniqueChains = chains.fold(ArrayList<LinkedHashSet<ChainableEvent>>()) { acc, set ->
                 if (chains.all { !it.containsAll(set) || it == set } && !set.all { it is ApiCall }) {
                     acc.add(set)
                 }
                 acc
             }
-            setChains(uniqueChains)
+            setChains(uniqueChains.sortedBy { it.last().createdTime })
             false
         }
     }
@@ -43,7 +45,7 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
         //do nothing
     }
 
-    private fun setChains(objs: List<Set<Identified>>) {
+    private fun setChains(objs: List<Set<ChainableEvent>>) {
         val newObjects = ArrayList<Event>()
 
         //Nest objects properly into their top level, display object.
@@ -67,7 +69,7 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
                     is ApiCall -> {
                         obj.copy().apply { expanded = false }
                     }
-                    is MessageQueued -> {
+                    is MessageEvent -> {
                         if (messageTableDto?.name != obj.name) {
                             messageTableDto = MessageTable(obj.name)
                         }
@@ -111,9 +113,10 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+
         return when (viewType) {
-            101 -> ChainTitleViewHolder(inflater.inflate(R.layout.item_recyclerview_chain_title, parent, false))
-            102 -> NextViewHolder(inflater.inflate(R.layout.item_recyclerview_and_then_arrow, parent, false))
+            EventViewType.valChainTitle.ordinal -> ChainTitleViewHolder(inflater.inflate(R.layout.item_recyclerview_chain_title, parent, false))
+            EventViewType.valNext.ordinal -> NextViewHolder(inflater.inflate(R.layout.item_recyclerview_and_then_arrow, parent, false))
             else -> super.onCreateViewHolder(parent, viewType)
         }
     }
@@ -127,17 +130,17 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
         }
     }
 
-    override fun getViewType(obj: Any): Int {
+    override fun getViewType(obj: Any): EventViewType {
         if (obj is ChainTitle) {
-            return 101
+            return EventViewType.valChainTitle
         }
         if (obj is Next) {
-            return 102
+            return EventViewType.valNext
         }
         return super.getViewType(obj)
     }
 
-    override fun bindTitleVH(viewHolder: TitleViewHolder, obj: Title) {
+    override fun bindTitleVH(viewHolder: TitleViewHolder, obj: CategoryTitle) {
         super.bindTitleVH(viewHolder, obj)
         viewHolder.dropDown.visible(false)
     }
@@ -157,7 +160,7 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
     }
 
     private fun shouldSkipNextArrow(previousItem: Event?, nextItem: Event): Boolean {
-        return (previousItem?.getDtoType() == valApiCall && nextItem.getDtoType() == valApiCall) ||
+        return (previousItem?.getDtoType() == EventViewType.valApiCall && nextItem.getDtoType() == EventViewType.valApiCall) ||
                 previousItem == null ||
                 previousItem is ChainTitle
     }
@@ -180,15 +183,15 @@ fun Event.copy(): Event {
         is NetworkRequest -> this.copy().apply { expanded = false }
         is KitApiCall -> this.copy().apply { expanded = false }
         is MessageTable -> MessageTable(name, messages, false)
-        is MessageQueued -> MessageQueued(name, body, status, storedTime, bodyExpanded = false, rowId = rowId, id = id)
+        is MessageEvent -> MessageEvent(name, body, status, storedTime, bodyExpanded = false, rowId = rowId, id = id)
         is Kit -> this.copy().apply { apiCalls = ArrayList(apiCalls) }
         is StateAllUsers -> StateAllUsers(users)
         is StateCurrentUser -> StateCurrentUser(user)
         is StateStatus -> StateStatus(name, priority, status, fields)
-        is StateGeneric -> StateGeneric(name, priority)
-        is Title -> Title(title, itemType, false, order)
+        is StateEvent -> StateEvent(name, priority)
+        is CategoryTitle -> CategoryTitle(title, itemType, false, order)
         is ChainListAdapter.Next -> ChainListAdapter.Next()
-        is Identified -> Identified(id, name)
+        is ChainableEvent -> ChainableEvent(id, name)
         is ChainTitle -> ChainTitle(name)
         else -> Event(name)
     }

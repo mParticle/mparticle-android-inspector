@@ -48,7 +48,7 @@ uploadArchives{
 
             pom.project {
                 version project.version
-                artifactId 'view-catcher'
+                artifactId project.name
                 packaging 'aar'
                 name project.ext.kitDescription
                 description project.ext.kitDescription

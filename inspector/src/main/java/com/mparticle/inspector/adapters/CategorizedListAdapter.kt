@@ -4,7 +4,10 @@ import android.content.Context
 import android.support.v7.widget.RecyclerView
 import com.mparticle.internal.Logger
 import com.mparticle.inspector.*
-import com.mparticle.inspector.models.*
+import com.mparticle.inspector.EventViewType.*
+import com.mparticle.inspector.events.*
+import com.mparticle.inspector.viewholders.*
+import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.visible
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -19,24 +22,24 @@ import kotlin.collections.forEach
 import kotlin.collections.indexOfFirst
 import kotlin.collections.remove
 
-open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<Int, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback) {
+open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback) {
     val messageTableMap = HashMap<String, MessageTable>()
 
     init {
         objectMap.apply {
-            putIfEmpty(valTitle, LinkedHashSet())
+            putIfEmpty(EventViewType.valTitle, LinkedHashSet())
             putIfEmpty(valStateGeneric, LinkedHashSet())
             putIfEmpty(valApiCall, LinkedHashSet())
             putIfEmpty(valNetworkRequest, LinkedHashSet())
-            putIfEmpty(valMessage, LinkedHashSet())
+            putIfEmpty(EventViewType.valMessage, LinkedHashSet())
             putIfEmpty(valMessageTable, LinkedHashSet())
             putIfEmpty(valKit, LinkedHashSet())
         }
-        addItem(Title(titleState, valStateGeneric, order = Order.Custom))
-        addItem(Title(titleApiCall, valApiCall))
-        addItem(Title(titleKit, valKit, order = Order.Alphbetical))
-        addItem(Title(titleNetworkRequest, valNetworkRequest))
-        addItem(Title(titleStoredMessages, valMessageTable, order = Order.Alphbetical))
+        addItem(CategoryTitle(titleState, valStateGeneric, order = Order.Custom))
+        addItem(CategoryTitle(titleApiCall, valApiCall))
+        addItem(CategoryTitle(titleKit, valKit, order = Order.Alphbetical))
+        addItem(CategoryTitle(titleNetworkRequest, valNetworkRequest))
+        addItem(CategoryTitle(titleStoredMessages, valMessageTable, order = Order.Alphbetical))
         objectMap.values.forEach { it.forEach { addItem(it, false) } }
     }
 
@@ -52,7 +55,7 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<In
         }
     }
 
-    override fun bindTitleVH(viewHolder: TitleViewHolder, obj: Title) {
+    override fun bindTitleVH(viewHolder: TitleViewHolder, obj: CategoryTitle) {
         super.bindTitleVH(viewHolder, obj)
         fun setCount() {
             val count = objectMap.get(obj.itemType)?.size ?: 0
@@ -78,7 +81,7 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<In
                     objects.subList(objects.indexOf(obj) + 1, objects.size).let {
                         var count = 0
                         ArrayList<Any>(it).forEach {
-                            if (it is Title) {
+                            if (it is CategoryTitle) {
                                 found = true
                             } else {
                                 if (!found) {
@@ -107,7 +110,7 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<In
             }
             is ApiCall -> addItemToList(titleApiCall, obj, new)
             is Kit -> addItemToList(titleKit, obj, new)
-            is MessageQueued -> {
+            is MessageEvent -> {
                 var newMessageTable = false
                 if (!messageTableMap.containsKey(obj.name)) {
                     newMessageTable = true
@@ -119,17 +122,17 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<In
                     refreshDataObject(it)
                 }
             }
-            is Title -> {
-                if (objectMap.get(valTitle)?.firstOrNull() { it is Title && it.title == obj.title } == null) {
+            is CategoryTitle -> {
+                if (objectMap.get(valTitle)?.firstOrNull() { it is CategoryTitle && it.title == obj.title } == null) {
                     objectMap.get(valTitle)?.add(obj)
                 }
                 val objects = getObjects()
-                if (objects.firstOrNull { it is Title && it.title == obj.title } == null) {
+                if (objects.firstOrNull { it is CategoryTitle && it.title == obj.title } == null) {
                     objects.add(obj)
                 }
                 refreshData(objects)
             }
-            is StateGeneric -> addItemToList(titleState, obj, new)
+            is StateEvent -> addItemToList(titleState, obj, new)
             is MessageTable -> addItemToList(titleStoredMessages, obj, false)
 
             else -> throw RuntimeException("Unimplemented Item title: ${obj.javaClass.name}")
@@ -141,13 +144,13 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<In
             true -> objectMap[obj.getDtoType()]!!.add(obj) //if this crashes, you forgot to add a title ;)
         }
         val titleDto = objectMap.get(valTitle)?.first {
-            it is Title && it.title == title
+            it is CategoryTitle && it.title == title
         }
-        if ((titleDto as Title).expanded) {
+        if ((titleDto as CategoryTitle).expanded) {
             val objects = getObjects()
             var indexToAdd = objects.indexOf(titleDto) + 1
             val maxIndex = objects.subList(indexToAdd, objects.size)
-                    .indexOfFirst { it is Title }
+                    .indexOfFirst { it is CategoryTitle }
                     .let {
                         if (it >= 0) {
                             it + indexToAdd
@@ -160,11 +163,11 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<In
                     Order.Chronological_Recent_First -> {
                     }//do nothing, default
                     Order.Custom -> {
-                        if (obj is StateGeneric) {
+                        if (obj is StateEvent) {
                             val prioritizedIndex = objects
                                     .subList(indexToAdd, maxIndex + 1)
                                     .indexOfFirst {
-                                        if (it is StateGeneric) {
+                                        if (it is StateEvent) {
                                             obj.priority > it.priority
                                         } else {
                                             false
@@ -210,7 +213,7 @@ fun ArrayList<Any>.replace(replace: Any, replacement: Any): Boolean {
     return false
 }
 
-fun MutableMap<Int, LinkedHashSet<Event>>.putIfEmpty(key: Int, value: LinkedHashSet<Event>) {
+fun <K, V> MutableMap<K, V>.putIfEmpty(key: K, value: V) {
     if (!containsKey(key)) {
         put(key, value)
     }

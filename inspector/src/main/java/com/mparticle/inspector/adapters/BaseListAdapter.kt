@@ -10,11 +10,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.mparticle.ListenerImplementation
-import com.mparticle.identity.MParticleUser
+import com.mparticle.ListenerImplementation.Companion.SESSION_ID
+import com.mparticle.inspector.EventViewType
+import com.mparticle.inspector.EventViewType.*
 import com.mparticle.internal.Logger
-import com.mparticle.inspector.*
 import com.mparticle.inspector.customviews.JSONTextView
-import com.mparticle.inspector.models.*
+import com.mparticle.inspector.events.*
+import com.mparticle.inspector.viewholders.*
 import com.mparticle.inspector.utils.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -24,6 +26,7 @@ import org.json.JSONObject
 import java.util.HashMap
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
+import com.mparticle.inspector.R
 
 
 abstract class BaseListAdapter(val context: Context, val startTime: Long, val displayCallback: (Int) -> Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -39,7 +42,8 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        var holder = when (viewType) {
+        val eventType = EventViewType.values().first { it.ordinal == viewType}
+        var holder = when (eventType) {
             valTitle -> TitleViewHolder(inflater.inflate(R.layout.item_recyclerview_title, parent, false))
             valNetworkRequest -> NetworkRequestViewHolder(inflater.inflate(R.layout.item_recyclerview_network, parent, false), parent)
             valApiCall -> ApiCallViewHolder(inflater.inflate(R.layout.item_recyclerview_apicall, parent, false), parent)
@@ -48,11 +52,11 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
             valMessageTable -> MessageTableViewHolder(inflater.inflate(R.layout.item_recyclerview_enumerated, parent, false), parent)
             valStateGeneric -> StateViewHolder(inflater.inflate(R.layout.item_recyclerview_state_generic, parent, false), parent)
             valStateCurrentUser -> StateCurrentUserViewHolder(inflater.inflate(R.layout.item_recyclerview_state_currentuser, parent, false), parent)
-            valStateAllUsers -> StateAllUsersViewHolder(inflater.inflate(R.layout.item_recyclerview_enumerated, parent, false), parent)
+            valStateList -> StateListViewHolder(inflater.inflate(R.layout.item_recyclerview_enumerated, parent, false), parent)
             valStateStatus -> StateStatusViewHolder(inflater.inflate(R.layout.item_recyclerview_state_status, parent, false), parent)
-            else -> throw RuntimeException("${viewType} not yet implemented for recycler view")
+            else -> throw RuntimeException("${eventType.name} not yet implemented for recycler view")
         }
-        if (viewType != valTitle) {
+        if (eventType != valTitle) {
             holder.itemView.background = ContextCompat.getDrawable(context, R.drawable.list_sub_item)
             (holder.itemView.layoutParams as RecyclerView.LayoutParams).apply {
                 var density = context.resources.displayMetrics.density
@@ -67,14 +71,17 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
         val obj = objects[position]
         Logger.error("bind ${obj.name}, pos: $position")
         when (holder) {
-            is TitleViewHolder -> bindTitleVH(holder, obj as Title)
+            is TitleViewHolder -> bindTitleVH(holder, obj as CategoryTitle)
             is NetworkRequestViewHolder -> bindNetworkViewHolder(holder, obj as NetworkRequest)
             is ApiCallViewHolder -> bindApiViewHolder(holder, obj as ApiCall)
             is KitViewHolder -> bindKitViewHolder(holder, obj as Kit)
-            is MessageQueuedViewHolder -> bindMessageQueuedDto(holder, obj as MessageQueued)
+            is MessageQueuedViewHolder -> bindMessageQueuedDto(holder, obj as MessageEvent)
             is MessageTableViewHolder -> bindMessageTable(holder, obj as MessageTable)
             is StateCurrentUserViewHolder -> bindStateCurrentUserDto(holder, obj as StateCurrentUser)
-            is StateAllUsersViewHolder -> bindStateAllUsersDto(holder, obj as StateAllUsers)
+            is StateListViewHolder -> when (obj) {
+                is StateAllUsers -> bindStateAllUsersDto(holder, obj)
+                is StateAllSessions -> bindStateAllSessions(holder, obj)
+            }
             is StateStatusViewHolder -> bindStateStatus(holder, obj as StateStatus)
         }
         bindAllViewHolders(holder, obj)
@@ -91,20 +98,20 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
     }
 
     override fun getItemViewType(position: Int): Int {
-        return getViewType(objects[position])
+        return getViewType(objects[position]).ordinal
     }
 
-    open fun getViewType(obj: Any) : Int {
+    open fun getViewType(obj: Any) : EventViewType {
         return when (obj) {
-            is Title -> valTitle
+            is CategoryTitle -> valTitle
             is NetworkRequest -> valNetworkRequest
             is ApiCall -> valApiCall
             is Kit -> valKit
-            is MessageQueued -> valMessage
+            is MessageEvent -> valMessage
             is StateCurrentUser -> valStateCurrentUser
-            is StateAllUsers -> valStateAllUsers
+            is StateAllUsers, is StateAllSessions -> valStateList
             is StateStatus -> valStateStatus
-            is StateGeneric -> valStateGeneric
+            is StateEvent -> valStateGeneric
             is MessageTable -> valMessageTable
             else -> throw RuntimeException("${obj.javaClass.simpleName} not implemented for ViewType")
         }
@@ -115,7 +122,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
             is NetworkRequest -> titleNetworkRequest
             is ApiCall -> titleApiCall
             is Kit -> titleKit
-            is MessageQueued -> titleStoredMessages
+            is MessageEvent -> titleStoredMessages
             is MessageTable -> titleStoredMessages
             is StateCurrentUser -> titleState
             is StateAllUsers -> titleState
@@ -124,7 +131,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
         }
     }
 
-    open fun bindTitleVH(viewHolder: TitleViewHolder, obj: Title)  {
+    open fun bindTitleVH(viewHolder: TitleViewHolder, obj: CategoryTitle)  {
         viewHolder.apply {
             title.text = obj.title
             this.dropDown.isClickable = false
@@ -142,7 +149,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
             expand.visible(obj.expanded)
             url.text = obj.url
             onHasConnections(obj.id) { async ->
-                url.setChainClickable(obj.id, displayCallback)
+                expand.setChainClickable(obj.id, displayCallback)
                 if (async) {
                     refreshDataObject(obj)
                 }
@@ -181,7 +188,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
             status.setStatus(obj.status)
             arguments.removeAllViews()
-            obj.arguments?.forEach { argument ->
+            obj.methodArguments?.forEach { argument ->
                 val argumentView = inflater.inflate(R.layout.item_recyclerview_apicall_argument, expanded, false)
                 argumentView.findViewById<TextView>(R.id.type).apply {
                     text = "${argument.clazz.simpleName}: "
@@ -259,7 +266,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                 ListenerImplementation.instance(context).parentsChildren[id]?.any { it.size > 1 } ?: false)
     }
 
-    protected fun bindMessageQueuedDto(viewHolder: MessageQueuedViewHolder, obj: MessageQueued) {
+    protected fun bindMessageQueuedDto(viewHolder: MessageQueuedViewHolder, obj: MessageEvent) {
         viewHolder.apply {
             type.text = "_id: ${obj.rowId}"
             bodyExpanded.visible(obj.bodyExpanded)
@@ -322,7 +329,45 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
         }
     }
 
-    protected fun bindStateAllUsersDto(viewHolder: StateAllUsersViewHolder?, obj: StateAllUsers) {
+    protected fun bindStateAllSessions(viewHolder: StateListViewHolder?, obj: StateAllSessions) {
+        viewHolder?.apply {
+            title.text = obj.name
+            userCount.text = obj.sessions.keys.size.toString()
+            expanded.visible(obj.expanded)
+            itemView.setOnClickListener {
+                obj.expanded = !obj.expanded
+                expanded.visible(obj.expanded)
+            }
+            expanded.removeAllViews()
+            obj.sessions.entries.forEach { (sessionEvent, isExpanded) ->
+                val view = inflater.inflate(R.layout.item_recyclerview_expandable_ll, expanded, false)
+                view.findViewById<TextView>(R.id.key).text = "sessionId: "
+                view.findViewById<TextView>(R.id.value).text = sessionEvent.fields.get(SESSION_ID).toString()
+                val innerExpanded = view.findViewById<ViewGroup>(R.id.expandedArea)
+                innerExpanded.visible(isExpanded.value)
+                sessionEvent.fields
+                        .filter { it.key != SESSION_ID }
+                        .forEach {
+                            val keyValueViewHolder = KeyValueHorizontal(innerExpanded, context)
+                            keyValueViewHolder.key.text = it.key
+                            when (it.value) {
+                                is JSONObject -> keyValueViewHolder.valueJson.bindJson(it.value as JSONObject)
+                                is JSONArray -> keyValueViewHolder.valueJson.bindJson(it.value as JSONArray)
+                                else -> keyValueViewHolder.value.text = it.value.toString()
+                            }
+                            innerExpanded.addView(keyValueViewHolder.itemView)
+                        }
+                view.setOnClickListener { view: View ->
+                    isExpanded.value = !isExpanded.value
+                    innerExpanded.visible(isExpanded.value)
+                }
+
+                expanded.addView(view)
+            }
+        }
+    }
+
+    protected fun bindStateAllUsersDto(viewHolder: StateListViewHolder?, obj: StateAllUsers) {
         viewHolder?.apply {
             title.text = obj.name
             userCount.text = obj.users.keys.size.toString()
@@ -351,7 +396,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                     }
                     innerExpanded.addView(keyValueViewHolder.itemView)
                 }
-                view.setOnClickListener { _ ->
+                view.setOnClickListener { view: View ->
                     userExpanded.value.value = !userExpanded.value.value
                     innerExpanded.visible(userExpanded.value.value)
                 }
@@ -417,9 +462,9 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                     objects.add(index, obj)
                 }
                 refreshData(objects, index)
-            } else if ((obj as? Identified)?.id != null) {
+            } else if ((obj as? ChainableEvent)?.id != null) {
                 objects.toList().forEachIndexed { i, namedDto ->
-                    if ((namedDto as? Identified)?.id == obj.id) {
+                    if ((namedDto as? ChainableEvent)?.id == obj.id) {
                         objects[i] = obj.copy()
                         refreshData(objects, i)
                     }

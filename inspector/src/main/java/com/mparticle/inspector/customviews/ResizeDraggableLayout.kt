@@ -33,9 +33,8 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        logo = findViewById(R.id.logo)
-        logo?.setOnClickListener {
-            showEmailPrompt()
+        logo = findViewById<View>(R.id.logo).apply {
+            setOnClickListener { showEmailPrompt() }
         }
         dragger = findViewById(R.id.dragger)
 
@@ -54,8 +53,15 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
                     if (top) {
                         val screenHeight = rootView.height
                         parentLayoutParams.bottomMargin = screenHeight - event.rawY.toInt() - yDelta
+                        if (parentLayoutParams.bottomMargin < 0) {
+                            parentLayoutParams.bottomMargin = 0
+                        }
+
                     } else {
                         parentLayoutParams.topMargin = event.rawY.toInt() - yDelta
+                        if (parentLayoutParams.topMargin < 0) {
+                            parentLayoutParams.topMargin = 0
+                        }
                     }
 
 
@@ -115,7 +121,6 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
                                         Inspector.getInstance()?.hide()
                                     }
                                 }
-                                Inspector.getInstance()?.dimensions?.update(parentLayoutParams)
                                 this@ResizeDraggableLayout.requestLayout()
                                 return true
                             } else {
@@ -164,6 +169,9 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
         }
         parentLayoutParams.apply {
             bottomMargin =  if (top) this@ResizeDraggableLayout.bottomMargin else this@ResizeDraggableLayout.topMargin
+            if (bottomMargin < 0) {
+                bottomMargin = 0
+            }
             topMargin = 0
         }
         top = true
@@ -176,6 +184,9 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
         }
         parentLayoutParams.apply {
             topMargin = if (top) this@ResizeDraggableLayout.bottomMargin else this@ResizeDraggableLayout.topMargin
+            if (topMargin < 0) {
+                topMargin = 0
+            }
             bottomMargin = 0
         }
         top = false

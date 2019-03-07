@@ -101,7 +101,7 @@ WidgetApi.getInstance()?.visible = true
 WidgetApi.Companion.getInstance().setVisible(true);
 ```
 
-### Exploring the Inspector
+### Exploring the Inspector's Views
 
 There are three main views in the Inspector. You can navigate between the three by swiping vertically. All three will not necessarily be present at any given time.
 
@@ -117,8 +117,42 @@ This list is a categorized collection of all the events that have been collected
 
 #### PathFinder View
 
-The PathFinder View will become visible when you click the orange area of a "followable" event.
-
 The PathFinder view is used to show the causal relationship between related events. This is where you will see the events that occurred because of another event, or the events that went into an event. This view exposed the inner working of the mParticle Android SDK for dissection.
 
 For example, if your code calls `MParticle.getInstance.logEvent()` you can select the resulting "API call" event and you should see the resulting "message" that was created as a result of the API call. Then an "upload" message that was created as a result of the "message", and finally the "events" network request that was completed as a result of the upload message.
+
+**Click** the orange area of a "followable" event to be taken to the PathFinder view
+
+<img src="./Inspector_Clickable.png" width=200 height=200>
+
+### Interacting with the Inspector
+
+The Inspector can be pinned to either the top or bottom of the screen.
+
+#### Resize
+
+**Press and Drag** the teal button on the right hand, middle limit of the Inspector view to resize the window
+
+<img src="./Inspector_Resize.png" width=200 height=100>
+
+#### Pin to top/bottom, dismiss
+
+**Long Press and Drag** the area to the left or right of the MParticle logo.
+
+<img src="./Inspector_Drag.png" width=200 height=100>
+
+* Drag to the top or bottom of the screen in order to pin to the top or bottom
+
+* Drag off the screen in order to hide Inspector. To show the Inspector again, use a shake gesture
+
+#### Dismiss temporarily
+
+**Double Tap** the area to the left or right of the MParticle logo in order to make the Inspector temporarily disappear for 5 seconds
+
+<img src="./Inspector_Drag.png" width=200 height=100>
+
+#### Export Events
+
+**Click** the logo in order to get an Export prompt
+
+<img src="./Inspector_Export.png" width=200 height=100>

@@ -1,14 +1,18 @@
 package com.mparticle.inspector.adapters
 
 import android.content.Context
-import android.os.Looper
 import android.support.v7.widget.RecyclerView
 import com.mparticle.inspector.*
-import com.mparticle.inspector.models.*
+import com.mparticle.inspector.events.CategoryTitle
+import com.mparticle.inspector.events.Event
+import com.mparticle.inspector.events.MessageEvent
+import com.mparticle.inspector.events.MessageTable
+import com.mparticle.inspector.viewholders.*
+import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.visible
 import java.util.*
 
-class RecentListAdapter(context: Context, objectMap: MutableMap<Int, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback) {
+class RecentListAdapter(context: Context, objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback) {
 
     val itemLimit = 100
 
@@ -42,12 +46,12 @@ class RecentListAdapter(context: Context, objectMap: MutableMap<Int, LinkedHashS
             displayCallback.invoke(-1)
         }
         synchronized(lock) {
-            if (obj is Title || obj.getDtoType() == valStateGeneric) {
+            if (obj is CategoryTitle || obj.getDtoType() == EventViewType.valStateGeneric) {
                 return
             }
-            if (obj is MessageQueued) {
+            if (obj is MessageEvent) {
                 obj = MessageTable(obj.name).apply {
-                    messages.put(obj as MessageQueued, Mutable(false))
+                    messages.put(obj as MessageEvent, Mutable(false))
                 }
             }
             var objects = getObjects()

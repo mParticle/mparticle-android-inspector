@@ -17,7 +17,7 @@ import com.mparticle.inspector.adapters.ChainListAdapter
 import com.mparticle.inspector.adapters.RecentListAdapter
 import com.mparticle.inspector.adapters.CategorizedListAdapter
 import com.mparticle.inspector.customviews.ResizeDraggableLayout
-import com.mparticle.inspector.models.Event
+import com.mparticle.inspector.events.Event
 
 class InspectorView(val application: Context, val listenerImplementation: ListenerImplementation, val startTime: Long) {
 
@@ -28,9 +28,9 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
     var listAdapter: SwipeViewAdapter? = null
     lateinit var wrapperViewGroup: SpyLayout
     lateinit var clientContainer: ViewGroup
-    lateinit var widgetContainer: ResizeDraggableLayout
+    lateinit var inspectorContainer: ResizeDraggableLayout
 
-    val objectMap: MutableMap<Int, LinkedHashSet<Event>> = HashMap()
+    val objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap()
 
     var clientView: View? = null
     var screenRoot: ViewGroup? = null
@@ -53,7 +53,7 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
     fun attach(activity: Activity) {
         wrapperViewGroup = LayoutInflater.from(activity).inflate(R.layout.widget, null) as SpyLayout
         clientContainer = wrapperViewGroup.findViewById(R.id.rootView)
-        widgetContainer = wrapperViewGroup.findViewById(R.id.widgetContainer)
+        inspectorContainer = wrapperViewGroup.findViewById(R.id.widgetContainer)
         wrapperViewGroup.viewTreeObserver.addOnGlobalLayoutListener(object: ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 setInitialSize()
@@ -67,10 +67,10 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
         screenRoot?.removeView(clientView)
         screenRoot?.addView(wrapperViewGroup)
         clientContainer.addView(clientView)
-        wrapperViewGroup.setWidgetView(widgetContainer)
+        wrapperViewGroup.setWidgetView(inspectorContainer)
 
-        viewPager = widgetContainer.findViewById(R.id.pager)
-        viewPagerTitle = widgetContainer.findViewById(R.id.pager_title)
+        viewPager = inspectorContainer.findViewById(R.id.pager)
+        viewPagerTitle = inspectorContainer.findViewById(R.id.pager_title)
         viewPager.adapter = SwipeViewAdapter(application, listenerImplementation).also { listAdapter = it }
         viewPager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener {
             override fun onPageScrollStateChanged(p0: Int) {}
@@ -86,7 +86,7 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
             override fun onPageSelected(p0: Int) {}
 
         })
-        widgetContainer.updateLogoSize()
+        inspectorContainer.updateLogoSize()
     }
 
     fun detach() {
@@ -99,22 +99,22 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
     private fun setInitialSize() {
         val dimensions: Inspector.Dimensions = Inspector.getInstance()?.dimensions ?: return
         if (dimensions.set) {
-            dimensions.applyTo(widgetContainer.layoutParams as FrameLayout.LayoutParams)
+            dimensions.applyTo(inspectorContainer.layoutParams as FrameLayout.LayoutParams)
         } else {
             if (small) {
-                (widgetContainer.layoutParams as FrameLayout.LayoutParams).apply {
+                (inspectorContainer.layoutParams as FrameLayout.LayoutParams).apply {
                     leftMargin = 0
                     bottomMargin = 0
                     rightMargin = 0
-                    topMargin = ((widgetContainer.parent as View).height * .6).toInt()
+                    topMargin = ((inspectorContainer.parent as View).height * .6).toInt()
                 }
             } else {
-                widgetContainer.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                inspectorContainer.layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             }
-            Inspector.getInstance()?.dimensions = Inspector.Dimensions().apply { update(widgetContainer.layoutParams as FrameLayout.LayoutParams) }
+            Inspector.getInstance()?.dimensions = Inspector.Dimensions().apply { update(inspectorContainer.layoutParams as FrameLayout.LayoutParams) }
         }
-        widgetContainer.requestLayout()
-        widgetContainer.updateLogoSize()
+        inspectorContainer.requestLayout()
+        inspectorContainer.updateLogoSize()
     }
 
 

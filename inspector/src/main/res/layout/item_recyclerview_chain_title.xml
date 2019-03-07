@@ -4,15 +4,10 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:layout_marginBottom="8dp">
-
     <View
         android:layout_width="match_parent"
         android:layout_height="18dp"
         android:background="@android:color/transparent"/>
-    <!--<FrameLayout-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--&gt;-->
     <TextView
         android:id="@+id/title"
         android:layout_width="match_parent"
@@ -23,6 +18,4 @@
         android:textStyle="bold|italic"
         android:gravity="center_vertical"
         android:padding="6dp"/>
-    <!--</FrameLayout>-->
-
 </LinearLayout>

@@ -6,7 +6,8 @@ import com.mparticle.identity.MParticleUser
 import com.mparticle.internal.InternalSession
 import com.mparticle.inspector.*
 import com.mparticle.inspector.customviews.Status
-import com.mparticle.inspector.models.*
+import com.mparticle.inspector.events.*
+import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.broadcast
 import com.mparticle.inspector.utils.milliToSecondsString
 import com.mparticle.inspector.utils.printClass
@@ -15,7 +16,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.ref.WeakReference
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.LinkedHashSet
@@ -23,29 +23,31 @@ import kotlin.collections.LinkedHashSet
 class ListenerImplementation private constructor(val context: Context) : ExternalListener {
 
 
-    var parentsChildren: Map<Int, Set<LinkedHashSet<Identified>>> = HashMap()
-    var childrensParents: Map<Int, Set<LinkedHashSet<Identified>>> = HashMap()
+    var parentsChildren: Map<Int, Set<LinkedHashSet<ChainableEvent>>> = HashMap()
+    var childrensParents: Map<Int, Set<LinkedHashSet<ChainableEvent>>> = HashMap()
 
     private var parentsChildrenIds: Map<Int, Set<LinkedHashSet<Int>>> = HashMap()
     private var childrensParentIds: Map<Int, Set<LinkedHashSet<Int>>> = HashMap()
 
 
-    val identifiedDtos: MutableMap<Int, Identified> = HashMap()
+    val chainableEventDtos: MutableMap<Int, ChainableEvent> = HashMap()
 
     val itemList = ArrayList<Event>()
     var addItemCallback: ((Event) -> Unit)? = null
     var refreshItemCallback: ((Event) -> Unit)? = null
-    var onUpdateListeners: MutableList<WeakReference<((Map<Int, Set<LinkedHashSet<Identified>>>, Map<Int, Set<LinkedHashSet<Identified>>>) -> Boolean)?>> = ArrayList()
+    var onUpdateListeners: MutableList<WeakReference<((Map<Int, Set<LinkedHashSet<ChainableEvent>>>, Map<Int, Set<LinkedHashSet<ChainableEvent>>>) -> Boolean)?>> = ArrayList()
 
-    val currentUserDto = StateCurrentUser(null)
-    val allUsersDto = StateAllUsers(HashMap())
-    lateinit var sessionDto: StateStatus
-    val previousSessions = StateAllUsers(HashMap())
-    var currentSession: InternalSession? = null
+    val mParticleState = createAddMParticleState().apply { priority = 5 }
+    val sessionDto = createSessionStatus(null).apply { priority = 4 }
+    val currentUserDto = StateCurrentUser(null).apply { priority = 3 }
+    val previousSessions = StateAllSessions(HashMap()).apply { priority = 2 }
+    val allUsersDto = StateAllUsers(HashMap()).apply { priority = 1 }
 
-    val messageMap = HashMap<Int, MessageQueued>()
+    val messageMap = HashMap<Int, MessageEvent>()
     val networkMap = HashMap<Int, NetworkRequest>()
     val activeKits = HashMap<Int, Kit>()
+
+
 
     companion object {
         @SuppressLint("StaticFieldLeak") //application context
@@ -56,12 +58,13 @@ class ListenerImplementation private constructor(val context: Context) : Externa
                 instance = it
             }
         }
+
+        val SESSION_ID = "uuid: "
     }
 
     init {
-        createAddMParticleState()
-        createAddSessionState()
-
+        addItem(mParticleState)
+        addItem(sessionDto)
         addItem(currentUserDto)
         addItem(allUsersDto)
     }
@@ -76,15 +79,15 @@ class ListenerImplementation private constructor(val context: Context) : Externa
     }
 
 
-    fun getById(id: Int): Identified? {
-        return identifiedDtos[id]
+    fun getById(id: Int): ChainableEvent? {
+        return chainableEventDtos[id]
     }
 
-    fun removeCompositesUpdatedListener(onUpdate: ((Map<Int, Set<LinkedHashSet<Identified>>>, Map<Int, Set<LinkedHashSet<Identified>>>) -> Unit)?) {
+    fun removeCompositesUpdatedListener(onUpdate: ((Map<Int, Set<LinkedHashSet<ChainableEvent>>>, Map<Int, Set<LinkedHashSet<ChainableEvent>>>) -> Unit)?) {
         onUpdateListeners.removeAll { it.get() == onUpdate }
     }
 
-    fun addCompositesUpdatedListener(updateNow: Boolean = false, onUpdate: ((Map<Int, Set<LinkedHashSet<Identified>>>, Map<Int, Set<LinkedHashSet<Identified>>>) -> Boolean)?) {
+    fun addCompositesUpdatedListener(updateNow: Boolean = false, onUpdate: ((Map<Int, Set<LinkedHashSet<ChainableEvent>>>, Map<Int, Set<LinkedHashSet<ChainableEvent>>>) -> Boolean)?) {
         onUpdateListeners.add(WeakReference(onUpdate))
         if (updateNow) {
             InternalListenerImpl.instance().updateObjectGraph()
@@ -109,7 +112,7 @@ class ListenerImplementation private constructor(val context: Context) : Externa
     }
 
     override fun onMessageCreated(table: String, rowId: Long, messageId: Int, message: JSONObject) {
-        val messageDto = MessageQueued(table, message, Status.Yellow, rowId = rowId, id = messageId)
+        val messageDto = MessageEvent(table, message, Status.Yellow, rowId = rowId, id = messageId)
         messageMap.put(messageId, messageDto)
         addItem(messageDto)
     }
@@ -121,19 +124,19 @@ class ListenerImplementation private constructor(val context: Context) : Externa
 
     override fun onApiMethodCalled(id: Int, apiName: String, objects: List<TrackableObject>, isClientCall: Boolean) {
         objects.map { argument ->
-            Argument(argument.obj.javaClass, argument.obj.printClass(), argument.trackingId).copy()
+            MethodArgument(argument.obj.javaClass, argument.obj.printClass(), argument.trackingId).copy()
         }.also { arguments ->
             ApiCall(apiName, arguments, System.currentTimeMillis(), id = id)
                     .let { dto ->
                         arguments.forEach { argument ->
                             if (argument.id != null) {
-                                identifiedDtos[argument.id] = dto
+                                chainableEventDtos[argument.id] = dto
                             }
                         }
                         if (isClientCall) {
                             addItem(dto)
                         } else {
-                            identifiedDtos[id] = dto
+                            chainableEventDtos[id] = dto
                         }
                     }
         }
@@ -198,7 +201,7 @@ class ListenerImplementation private constructor(val context: Context) : Externa
 
     override fun onKitMethodCalled(id: Int, kitId: Int, apiName: String, usedCall: Boolean?, objects: List<TrackableObject>) {
         objects.map { argument ->
-            Argument(argument.obj.javaClass, argument.obj.printClass(), argument.trackingId)
+            MethodArgument(argument.obj.javaClass, argument.obj.printClass(), argument.trackingId)
         }.also {
             val status = when (usedCall) {
                 true -> Status.Green
@@ -208,9 +211,9 @@ class ListenerImplementation private constructor(val context: Context) : Externa
             activeKits.get(kitId)?.apply {
                 var apiCallDto = KitApiCall(kitId, apiName, it, System.currentTimeMillis(), status = status, id = id)
                 apiCalls.add(apiCallDto)
-                apiCallDto.arguments?.forEach { argument ->
+                apiCallDto.methodArguments?.forEach { argument ->
                     if (argument.id != null) {
-                        identifiedDtos[argument.id] = apiCallDto
+                        chainableEventDtos[argument.id] = apiCallDto
                     }
                 }
                 refreshItem(this)
@@ -227,24 +230,42 @@ class ListenerImplementation private constructor(val context: Context) : Externa
     }
 
     override fun onSessionUpdated(session: InternalSession?) {
-        if (session != currentSession) {
-
+        val currentSession = sessionDto.obj as InternalSession?
+        if (session?.mSessionID != currentSession?.mSessionID && currentSession?.isActive == true) {
+            createSessionStatus(currentSession).apply {
+                fields = fields.entries.associate {
+                    it.key to it.value.run {
+                        when (this) {
+                            is Function0<*> -> invoke() ?: "-"
+                            else -> it.value
+                        }
+                    }
+                }.toMutableMap()
+            }.also {
+                previousSessions.sessions.put(it, Mutable(false))
+                if (previousSessions.sessions.size == 1) {
+                    addItem(previousSessions)
+                } else {
+                    refreshItem(previousSessions)
+                }
+            }
         }
-        currentSession = session
+
+        sessionDto.obj = session
         refreshItem(sessionDto)
     }
 
     private fun addItem(obj: Event) {
-        if (obj is Identified) {
-            identifiedDtos.put(obj.id, obj)
+        if (obj is ChainableEvent) {
+            chainableEventDtos.put(obj.id, obj)
         }
         GlobalScope.launch(Dispatchers.Main) {
             addItemCallback?.invoke(obj) ?: itemList.add(obj)
         }
     }
 
-    private fun createAddMParticleState() {
-        HashMap<String, Any>().apply {
+    private fun createAddMParticleState(): StateStatus {
+        return HashMap<String, Any>().apply {
             put("DeviceImei: ", { MParticle.getDeviceImei() ?: "-" })
             put("AndroidId Disabled: ", { MParticle.isAndroidIdDisabled() })
             put("OptOut: ", { MParticle.getInstance()?.optOut })
@@ -257,45 +278,45 @@ class ListenerImplementation private constructor(val context: Context) : Externa
             put("App State", { MParticle.getAppState() })
         }.let {
             StateStatus("MParticle State", 0, { if (MParticle.getInstance() != null) Status.Green else Status.Red }, it)
-        }.also {
-            addItem(it)
         }
     }
 
-    private fun createAddSessionState() {
+    private fun createSessionStatus(internalSession: InternalSession?): StateStatus {
+        val sessionStatus = StateStatus("Session", 4, { if (internalSession?.isActive == true) Status.Green else Status.Red }, obj = internalSession)
+
         HashMap<String, Any>().apply {
-            put("uuid: ", { currentSession?.mSessionID })
+            val session = { sessionStatus.obj as InternalSession? }
+            put(SESSION_ID, { session()?.mSessionID })
 
             put("foreground time; ", {
-                currentSession?.let {
+                session()?.let {
                     (System.currentTimeMillis() - it.mSessionStartTime - it.backgroundTime).milliToSecondsString()
                 } ?: "-"
             })
-            put("background time: ", { currentSession?.backgroundTime?.milliToSecondsString() ?: "-" })
-            put("event count: ", { currentSession?.mEventCount?.toString() ?: "-" })
+            put("background time: ", { session()?.backgroundTime?.milliToSecondsString() ?: "-" })
+            put("event count: ", { session()?.mEventCount.toString() ?: "-" })
             put("mpids: ", {
-                currentSession?.mpids?.run {
+                session()?.mpids?.run {
                     if (size == 0) {
                         "-"
                     } else {
-                        fold(StringBuilder()) { acc, mpid -> acc.append("$mpid,") }.toString()
+                        joinToString { it.toString() }
                     }
                 } ?: "-"
             })
             put("length: ", {
-                currentSession?.run {
+                session()?.run {
                     (mLastEventTime - mSessionStartTime).milliToSecondsString()
                 } ?: "-"
             })
-        }.let {
-            StateStatus("Session", 4, { if (currentSession?.isActive == true) Status.Green else Status.Red }, it)
         }.also {
-            sessionDto = it
-            addItem(it)
+            sessionStatus.fields = it
+            sessionStatus.status = { if ((sessionStatus.obj as InternalSession?)?.isActive == true) Status.Green else Status.Red }
         }
+        return sessionStatus
     }
 
-    private fun filterUnusedIds(chains: Map<Int, Set<java.util.LinkedHashSet<Int>>>): Map<Int, Set<LinkedHashSet<Identified>>> {
+    private fun filterUnusedIds(chains: Map<Int, Set<java.util.LinkedHashSet<Int>>>): Map<Int, Set<LinkedHashSet<ChainableEvent>>> {
         return chains
                 .map { (key, value) ->
                     key to value
