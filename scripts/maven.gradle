@@ -31,7 +31,6 @@ if (target_maven_repo == 'sonatype') {
 uploadArchives{
     repositories {
         mavenDeployer {
-
             if (target_maven_repo == 's3') {
                 configuration = configurations.deployerJars
                 repository(url: 's3://maven.mparticle.com')
@@ -48,7 +47,7 @@ uploadArchives{
 
             pom.project {
                 version project.version
-                artifactId project.name
+                artifactId "android-inspector"
                 packaging 'aar'
                 name project.ext.kitDescription
                 description project.ext.kitDescription

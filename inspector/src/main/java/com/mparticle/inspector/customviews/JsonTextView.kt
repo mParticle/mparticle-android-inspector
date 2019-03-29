@@ -12,39 +12,44 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.mparticle.inspector.R
-import com.yuyh.jsonviewer.library.JsonRecyclerView
+import org.json.JSONArray
 import org.json.JSONObject
 
-class JSONTextView(context: Context, attributes: AttributeSet) : JsonRecyclerView(context, attributes) {
+class JsonTextView(context: Context, attributes: AttributeSet) : RecyclerView(context, attributes) {
 
     var setGone = false
+    private var mAdapter: JsonViewAdapter? = null
 
     init {
         layoutManager = LockedScrollLinearLayoutManager(context)
-        setTextColor(ContextCompat.getColor(context, android.R.color.black))
-        setTextSize(14f)
-    }
-
-    fun setTextColor(color: Int) {
-        setKeyColor(color)
-        setValueTextColor(color)
-        setValueBooleanColor(color)
-        setValueNumberColor(color)
-        setValueUrlColor(color)
-        setValueNullColor(color)
-        setBracesColor(color)
+        JsonViewAdapter.textColor = ContextCompat.getColor(context, android.R.color.black)
+        JsonViewAdapter.textSize = 14f
     }
 
     fun setText(text: String) {
         adapter = TextViewAdapter(text)
     }
 
-    override fun bindJson(obj: JSONObject?) {
+    fun bindJson(obj: JSONObject?) {
         if (obj == null || obj.length() == 0) {
             setText("-")
         } else if (visibility == View.VISIBLE) {
-            super.bindJson(obj)
+            mAdapter = null
+            mAdapter = JsonViewAdapter(obj)
+            adapter = mAdapter
         }
+    }
+
+    fun bindJson(jsonStr: String) {
+        mAdapter = null
+        mAdapter = JsonViewAdapter(jsonStr)
+        adapter = mAdapter
+    }
+
+    fun bindJson(array: JSONArray) {
+        mAdapter = null
+        mAdapter = JsonViewAdapter(array)
+        adapter = mAdapter
     }
 
     fun clear() {

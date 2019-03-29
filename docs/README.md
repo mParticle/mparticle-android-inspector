@@ -2,92 +2,43 @@
 
 ## Inspector Gadget
 
-Hello, welcome to the Inspector Gadget alpha!
-
-The Inspector is a UI widget which attaches to the [mParticle Android SDK](https://git.corp.mparticle.com/mParticle/mparticle-android-sdk). It's designed to help you debug your mParticle implementation and API usage, as well as the inner workings of the mParticle Android SDK.
-
+Inspector Gadget is a UI widget which attaches to the [mParticle Android SDK](https://github.com/mParticle/mparticle-android-sdk). It's designed to help you debug your mParticle implementation and API usage, as well as the inner workings of the mParticle Android SDK.
 
 #### Requirements:
 
-* MinSdkVersion 16+
+- MinSdkVersion 16+
+- CompileSdkVersion 28
 
-* CompileSdkVersion 28
+## Adding Inspector
 
-* Support Libraries >= 26.1.0
+In your app-level `build.gradle` file, add the following dependency:
 
+```groovy
+implementation 'com.mparticle:android-inspector:0.5'
+```
 
-### Adding the Inspector
+> **Note**: You should not ship Inspector to a production app. For this reason you should only add the dependency to a debug or non-Google Play variant.
 
-The functionality of the Widget depends on a new listener interface for the mParticle Android SDK, which is not present in our public artifact. Because of this, in order to use the Inspector, you will also need to build the Android SDK from the source.
+## Initializing Inspector
 
-1) Clone mParticle Android SDK
+Inspector uses a new `SdkListener` interface exposed by the mParticle Android SDK. 
 
-   ```sh
-   git clone git@github.com:mParticle/mparticle-android-sdk.git
-   cd mparticle-android-sdk
-   git checkout inspector
-   ```
+This `SdkListener` interface will only be enabled if:
 
-2) Build and deploy the SDK to a local maven repo
-
-    ```sh
-    ./gradlew uploadArchives
-    ```
-
-3) Clone the Inspector
+- Your APK is marked as "debuggable", OR
+- A specific adb property is set with your package name:
 
     ```sh
-    git clone git@github.com:mParticle/mparticle-android-inspector.git`
-    cd mparticle-android-inspector
+    adb shell setprop 'debug.mparticle.listener <PACKAGE-NAME>'
     ```
 
-4) Build and deploy the Inspector to a local maven repo
+By default, Inspector will auto-start, as long as it has been added as a dependency of your app. There is **no initialization code required**.
 
-    ```sh
-    ./gradlew uploadArchives
-    ```
+## Viewing Inspector
 
-5) Add the Inspector dependency to your app.
+When the application starts, Inspector will not be visible. **By default, Inspector will become visible when a shake gesture is detected**. Simply shake the device 3-4 times and Inspector will become visible.
 
-   - In your app-level `build.gradle` file, add the following dependency:
-
-      ```groovy
-      implementation 'com.mparticle:android-inspector:0.1-SNAPSHOT
-      ```
-
-    > **Note**: You should not ship the Inspector to a production app. For this reason you should only add the dependency to a debug or non-Google Play variant.
-
-   - You'll also need to add the `mavenLocal()` repository:
-
-      ```groovy
-      repositories {
-          mavenLocal()
-      }
-      ```
-
-6) Force usage of the alpha mParticle Android SDK
-
-    You may already have a dependency for `com.mparticle:android-core` in you project and any partner kits you may have already include a transitive dependency on it as well. You must force any package that depends on `com.mparticle:android-core` to depend on the alpha version of the SDK. Make sure all of your kits are using the latest version, and add the additional snippet
-
-    One easy way to force your transitive dependencies to point to the alpha SDK artifact is to add the following snippet in you app level `build.gradle`:
-
-   ```groovy
-   configurations.all {
-       resolutionStrategy {
-           force 'com.mparticle:android-core:5.7.8-SNAPSHOT'
-       }
-   }
-   ```
-
-## Initializing the Inspector
-
-By default, the Inspector will auto-start, as long as it has been added as a dependency of your app. There is **no initialization code required**.
-
-## Viewing the Inspector
-
-When the application starts, the Inspector will not be visible. **By default, the Inspector will become visible when a shake gesture is detected**. Simply shake the device 3-4 times and the Inspector will become visible.
-
-You can also make the Inspector visible programatically. This is very useful if you are using an Emulator, and are unable to perform a shake gesture.
+You can also make Inspector visible programatically. This is very useful if you are using an emulator, and are unable to perform a shake gesture.
 
 #### Kotlin
 
@@ -101,9 +52,9 @@ WidgetApi.getInstance()?.visible = true
 WidgetApi.Companion.getInstance().setVisible(true);
 ```
 
-### Exploring the Inspector's Views
+### Exploring Inspector's Views
 
-There are three main views in the Inspector. You can navigate between the three by swiping vertically. All three will not necessarily be present at any given time.
+There are three main views in Inspector. You can navigate between the three by swiping vertically. All three will not necessarily be present at any given time.
 
 Most events that populate these views are expandable, which is done with a simple click. When an event is expanded, you might notice that some have fields with an orange background. **This indicates that the event is "followable" in the PathFinder view**. If you click the orange area, you will be taken to the PathFinder View for that event. Events that are followable currently consist of certain API and network events.
 
@@ -137,17 +88,17 @@ The Inspector can be pinned to either the top or bottom of the screen.
 
 #### Pin to top/bottom, dismiss
 
-**Long Press and Drag** the area to the left or right of the MParticle logo.
+**Long Press and Drag** the area to the left or right of the mParticle logo.
 
 <img src="./Inspector_Drag.png" width=200 height=100>
 
 * Drag to the top or bottom of the screen in order to pin to the top or bottom
 
-* Drag off the screen in order to hide Inspector. To show the Inspector again, use a shake gesture
+* Drag off the screen in order to hide Inspector. To show Inspector again, use a shake gesture
 
 #### Dismiss temporarily
 
-**Double Tap** the area to the left or right of the MParticle logo in order to make the Inspector temporarily disappear for 5 seconds
+**Double Tap** the area to the left or right of the mParticle logo in order to make Inspector temporarily disappear for 5 seconds
 
 <img src="./Inspector_Drag.png" width=200 height=100>
 

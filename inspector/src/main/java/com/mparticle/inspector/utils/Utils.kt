@@ -6,8 +6,8 @@ import java.util.*
 class Utils {
     companion object {
         fun isSimulator(): Boolean {
-            val model = Build.MODEL.toLowerCase(Locale.getDefault());
-            return model.contains("emulator") || model.contains("sdk");
+            val model = Build.MODEL?.toLowerCase(Locale.getDefault());
+            return model?.contains("emulator") == true || model?.contains("sdk") == true
         }
     }
 }

@@ -4,8 +4,6 @@ import android.content.Context
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
-import com.mparticle.InternalListenerImpl
-import com.mparticle.ListenerImplementation
 import com.mparticle.inspector.*
 import com.mparticle.inspector.customviews.Status
 import com.mparticle.inspector.events.*
@@ -13,7 +11,7 @@ import com.mparticle.inspector.viewholders.*
 import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.visible
 
-class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTime: Long, private var itemId: Int, val listenerImplementation: ListenerImplementation) : BaseListAdapter(context, startTime, displayCallback) {
+class ChainListAdapter(context: Context, dataManager: DataManager, displayCallback: (Int) -> Unit, startTime: Long, private var itemId: Int, val listenerImplementation: DataManager) : BaseListAdapter(context, startTime, displayCallback, dataManager) {
 
     init {
         initialize()
@@ -31,7 +29,7 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
             parentsChildren[itemId]?.forEach { chains.add(LinkedHashSet(it.reversed()))}
 
             val uniqueChains = chains.fold(ArrayList<LinkedHashSet<ChainableEvent>>()) { acc, set ->
-                if (chains.all { !it.containsAll(set) || it == set } && !set.all { it is ApiCall }) {
+                if (chains.all { !it.containsAll(set) || it == set } && !set.all { it is ApiCall && !(it is KitApiCall)  }) {
                     acc.add(set)
                 }
                 acc
@@ -58,11 +56,11 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
                 when (obj) {
                     is KitApiCall -> {
                         if (kitDto?.kitId != obj.kitId) {
-                            kitDto = listenerImplementation.activeKits.get(obj.kitId)?.copy()
+                            kitDto = listenerImplementation.getActiveKit(obj.kitId)?.copy()
                             kitDto?.apiCalls?.clear()
                         }
                         if (kitDto == null) {
-                            kitDto = Kit(obj.kitId, InternalListenerImpl.instance().getKitName(obj.kitId), Status.Red)
+                            kitDto = Kit(obj.kitId, dataManager.getKitName(obj.kitId), Status.Red)
                         }
                         kitDto?.apply {  apiCalls.add(obj.copy().apply { expanded = false }) }
                     }
@@ -154,8 +152,13 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
     private fun getChainTitle(chain: Collection<Event>): String {
         return when (chain.size) {
             0 -> "Empty"
-            1 -> chain.first().name + " to ..."
-            else -> chain.first().name + " to " + chain.last().getEndChainName()
+            1 -> chain.first().getChainName() + " to ..."
+            else -> chain.first().getChainName() + " to " +
+                    if (chain.indexOfLast { it is KitApiCall } > 0) {
+                        chain.last { it is KitApiCall }.getChainName(true)
+                    } else {
+                        chain.last().getChainName(true)
+                    }
         }
     }
 
@@ -165,11 +168,11 @@ class ChainListAdapter(context: Context, displayCallback: (Int) -> Unit, startTi
                 previousItem is ChainTitle
     }
 
-    fun Event.getEndChainName(): String {
+    fun Event.getChainName(isEnd: Boolean = false): String {
         return when(this) {
             is NetworkRequest, is Kit -> getShortName().capitalize()
-            is KitApiCall -> InternalListenerImpl.instance().getKitName(kitId) + " Kit"
-            else -> " ..."
+            is KitApiCall -> dataManager.getKitName(kitId) + " Kit"
+            else -> if (isEnd) " ..." else name
         }
     }
 

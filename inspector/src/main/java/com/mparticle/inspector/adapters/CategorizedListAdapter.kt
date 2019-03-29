@@ -2,27 +2,24 @@ package com.mparticle.inspector.adapters
 
 import android.content.Context
 import android.support.v7.widget.RecyclerView
-import com.mparticle.internal.Logger
-import com.mparticle.inspector.*
+import com.mparticle.inspector.DataManager
+import com.mparticle.inspector.EventViewType
 import com.mparticle.inspector.EventViewType.*
+import com.mparticle.inspector.SdkListenerImpl
 import com.mparticle.inspector.events.*
-import com.mparticle.inspector.viewholders.*
+import com.mparticle.inspector.getDtoType
 import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.visible
+import com.mparticle.inspector.viewholders.ItemViewHolder
+import com.mparticle.inspector.viewholders.TitleViewHolder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.util.HashMap
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashSet
-import kotlin.collections.MutableMap
-import kotlin.collections.first
-import kotlin.collections.firstOrNull
-import kotlin.collections.forEach
-import kotlin.collections.indexOfFirst
-import kotlin.collections.remove
 
-open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback) {
+open class CategorizedListAdapter(context: Context, dataManager: DataManager, var objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback, dataManager) {
     val messageTableMap = HashMap<String, MessageTable>()
 
     init {
@@ -107,6 +104,12 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<Ev
         when (obj) {
             is NetworkRequest -> {
                 addItemToList(titleNetworkRequest, obj, new)
+            }
+            is KitApiCall -> {
+                dataManager.getActiveKit(obj.kitId)?.let {
+                    it.apiCalls.add(obj)
+                    refreshDataObject(it)
+                }
             }
             is ApiCall -> addItemToList(titleApiCall, obj, new)
             is Kit -> addItemToList(titleKit, obj, new)
@@ -194,7 +197,6 @@ open class CategorizedListAdapter(context: Context, var objectMap: MutableMap<Ev
             }
             if (!objects.contains(obj)) {
                 objects.add(indexToAdd, obj)
-                Logger.error("Add obj: ${obj.name}, pos: $indexToAdd")
                 refreshData(objects, position = indexToAdd, removed = false)
             } else {
                 refreshData(objects, indexToAdd, null)

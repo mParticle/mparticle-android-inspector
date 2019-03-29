@@ -9,12 +9,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import com.mparticle.ListenerImplementation
-import com.mparticle.ListenerImplementation.Companion.SESSION_ID
+import com.mparticle.inspector.Constants.Companion.SESSION_ID
+import com.mparticle.inspector.DataManager
 import com.mparticle.inspector.EventViewType
 import com.mparticle.inspector.EventViewType.*
-import com.mparticle.internal.Logger
-import com.mparticle.inspector.customviews.JSONTextView
+import com.mparticle.inspector.customviews.JsonTextView
 import com.mparticle.inspector.events.*
 import com.mparticle.inspector.viewholders.*
 import com.mparticle.inspector.utils.*
@@ -29,7 +28,7 @@ import kotlin.collections.ArrayList
 import com.mparticle.inspector.R
 
 
-abstract class BaseListAdapter(val context: Context, val startTime: Long, val displayCallback: (Int) -> Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+abstract class BaseListAdapter(val context: Context, val startTime: Long, val displayCallback: (Int) -> Unit, val dataManager: DataManager) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var objects: List<Event> = ArrayList()
     val inflater = LayoutInflater.from(context)
     var listView: RecyclerView? = null
@@ -69,7 +68,6 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val obj = objects[position]
-        Logger.error("bind ${obj.name}, pos: $position")
         when (holder) {
             is TitleViewHolder -> bindTitleVH(holder, obj as CategoryTitle)
             is NetworkRequestViewHolder -> bindNetworkViewHolder(holder, obj as NetworkRequest)
@@ -181,7 +179,11 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
     protected fun bindApiViewHolder(viewHolder: ApiCallViewHolder, obj: ApiCall) {
         viewHolder.apply {
-            call_description.text = obj.name
+            call_description.text = if (obj is KitApiCall) {
+                "${dataManager.getKitName(obj.kitId)}.${obj.name}"
+            } else {
+                obj.name
+            }
 
             time_sent.text = obj.timeSent.getTimeText(startTime)
             time_sent.visible(obj.status == null)
@@ -193,7 +195,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                 argumentView.findViewById<TextView>(R.id.type).apply {
                     text = "${argument.clazz.simpleName}: "
                 }
-                argumentView.findViewById<JSONTextView>(R.id.value).apply {
+                argumentView.findViewById<JsonTextView>(R.id.value).apply {
                     if (argument.value is JSONObject) {
                         bindJson(argument.value)
                     } else {
@@ -247,11 +249,11 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
     }
 
     open protected fun onHasConnections(id: Int?, onConnectable: (Boolean) -> Unit) {
-        if (hasConnections(id)) {
+        if (dataManager.hasConnections(id)) {
             onConnectable(false)
         } else {
-            ListenerImplementation.instance(context).addCompositesUpdatedListener { _, _ ->
-                if (hasConnections(id)) {
+            dataManager.addCompositesUpdatedListener { _, _ ->
+                if (dataManager.hasConnections(id)) {
                     onConnectable(true)
                     true
                 } else {
@@ -259,11 +261,6 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                 }
             }
         }
-    }
-
-    private fun hasConnections(id: Int?): Boolean {
-        return id != null && (ListenerImplementation.instance(context).childrensParents[id]?.any { it.size > 1 } ?: false ||
-                ListenerImplementation.instance(context).parentsChildren[id]?.any { it.size > 1 } ?: false)
     }
 
     protected fun bindMessageQueuedDto(viewHolder: MessageQueuedViewHolder, obj: MessageEvent) {
@@ -357,7 +354,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                             }
                             innerExpanded.addView(keyValueViewHolder.itemView)
                         }
-                view.setOnClickListener { view: View ->
+                view.setOnClickListener {
                     isExpanded.value = !isExpanded.value
                     innerExpanded.visible(isExpanded.value)
                 }
@@ -396,7 +393,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                     }
                     innerExpanded.addView(keyValueViewHolder.itemView)
                 }
-                view.setOnClickListener { view: View ->
+                view.setOnClickListener {
                     userExpanded.value.value = !userExpanded.value.value
                     innerExpanded.visible(userExpanded.value.value)
                 }
@@ -494,17 +491,12 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                 when (removed) {
                     true -> {
                         notifyItemRangeRemoved(position, count ?: 1)
-                        Logger.error("Removed: $position ${if (count ?: 0 > 0) "count $count" else ""}")
                     }
                     false -> {
                         notifyItemRangeInserted(position, count ?: 1)
-                        Logger.error("Inserted: $position ${if (count ?: 0 > 0) "count $count" else ""}")
-
                     }
                     null -> {
                         notifyItemChanged(position, count ?: 1)
-                        Logger.error("Changed: $position ${if (count ?: 0 > 0) "count $count" else ""}")
-
                     }
                 }
             }

@@ -1,4 +1,4 @@
-package com.sample.mparticle.ztestapp
+package com.sample.testapp
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -14,10 +14,14 @@ import android.widget.Switch
 import android.widget.TextView
 import com.mparticle.MPEvent
 import com.mparticle.MParticle
-import com.mparticle.commerce.*
+import com.mparticle.commerce.CommerceEvent
+import com.mparticle.commerce.Product
+import com.mparticle.commerce.TransactionAttributes
 import com.mparticle.identity.*
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.*
+import kotlin.collections.HashMap
 
 class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListener, TaskSuccessListener, IdentityStateListener {
 
@@ -82,13 +86,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListe
 
     private fun showUser(user: MParticleUser?) {
         if (user == null) {
-            return
-        }
-        val userJson = JSONObject()
-        if (user == null) {
             mCurrentUserText?.text = "User is Null"
             return
         }
+        val userJson = JSONObject()
         try {
             userJson.put("MPID", user.getId())
             userJson.put("User Attributes", JSONObject(user.getUserAttributes()))
@@ -175,6 +176,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListe
         MParticle.getInstance()?.Identity()?.removeIdentityStateListener(this)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun addUA(view: View) {
         val key = mAttrKey?.text.toString()
         val value = mAttrValue?.text.toString()
@@ -188,32 +190,45 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListe
     }
 
     internal var i = 0
+    @Suppress("UNUSED_PARAMETER")
     fun logEvent(view: View) {
-           MParticle.getInstance()!!.logEvent(MPEvent.Builder("Event ${i++}").build())
-//        val product1 = Product.Builder("Name", "sku123", 2.0).brand("asdv").build()
-//        val product2 = Product.Builder("Name2", "sdluusdiofbnvdsfv", 4.22).category("category").build()
-//        val transactionAttributes = TransactionAttributes().apply {
-//            id = "1234123442314231234341214341233412423"
-//            this.revenue = 99.0
-//        }
-//        val commerceEvent = CommerceEvent.Builder(Product.CHECKOUT, product1)
-//                .addProduct(product2)
-//                .transactionAttributes(transactionAttributes)
-//                .build()
-//        MParticle.getInstance()?.logEvent(commerceEvent)
+        when (Random().nextInt() % 4) {
+            0 -> MParticle.getInstance()?.logEvent(MPEvent.Builder("Event ${i++}").build())
+            1 -> {
+                val product1 = Product.Builder("Name", "sku123", 2.0).brand("asdv").build()
+                val product2 = Product.Builder("Name2", "sdluusdiofbnvdsfv", 4.22).category("category").build()
+                val transactionAttributes = TransactionAttributes().apply {
+                    id = "1234123442314231234341214341233412423"
+                    this.revenue = 99.0
+                }
+                val commerceEvent = CommerceEvent.Builder(Product.CHECKOUT, product1)
+                        .addProduct(product2)
+                        .transactionAttributes(transactionAttributes)
+                        .build()
+                MParticle.getInstance()?.logEvent(commerceEvent)
+            }
+            2 -> MParticle.getInstance()?.leaveBreadcrumb("important Breadcrumb ${i++}")
+            3 -> MParticle.getInstance()?.logScreen("Screen ${i++}", HashMap<String, String>().apply {
+                put("attribute1", "value1")
+                put("attribute2", "value2")
+            })
+        }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun upload(view : View) {
         MParticle.getInstance()?.upload()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun updatePushToken(view: View) {
         val pushToken = mPushToken?.text.toString()
         MParticle.getInstance()?.logPushRegistration(pushToken, "senderId")
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun nextScreen(v: View) {
-        startActivity(Intent(this, Main2Activity::class.java))
+        startActivity(Intent(this, SecondActivity::class.java))
     }
 }
 

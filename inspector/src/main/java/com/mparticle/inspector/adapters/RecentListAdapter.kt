@@ -3,16 +3,13 @@ package com.mparticle.inspector.adapters
 import android.content.Context
 import android.support.v7.widget.RecyclerView
 import com.mparticle.inspector.*
-import com.mparticle.inspector.events.CategoryTitle
-import com.mparticle.inspector.events.Event
-import com.mparticle.inspector.events.MessageEvent
-import com.mparticle.inspector.events.MessageTable
+import com.mparticle.inspector.events.*
 import com.mparticle.inspector.viewholders.*
 import com.mparticle.inspector.utils.Mutable
 import com.mparticle.inspector.utils.visible
 import java.util.*
 
-class RecentListAdapter(context: Context, objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback) {
+class RecentListAdapter(context: Context, dataManager: DataManager, objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap(), displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback, dataManager) {
 
     val itemLimit = 100
 
@@ -23,7 +20,7 @@ class RecentListAdapter(context: Context, objectMap: MutableMap<EventViewType, L
     init {
         objectMap.values
                 .fold(ArrayList<Event>()) { acc, list ->
-                    acc.apply { addAll(list)}
+                    acc.apply { addAll(list) }
                 }
                 .forEach { addItem(it) }
     }
@@ -42,11 +39,8 @@ class RecentListAdapter(context: Context, objectMap: MutableMap<EventViewType, L
 
     override fun addItem(event: Event) {
         var obj = event
-        if (getObjects().size == 0) {
-            displayCallback.invoke(-1)
-        }
         synchronized(lock) {
-            if (obj is CategoryTitle || obj.getDtoType() == EventViewType.valStateGeneric) {
+            if ((obj is CategoryTitle || obj.getDtoType() == EventViewType.valStateGeneric) && !(event is KitApiCall)) {
                 return
             }
             if (obj is MessageEvent) {
@@ -71,6 +65,4 @@ class RecentListAdapter(context: Context, objectMap: MutableMap<EventViewType, L
                     }
         }
     }
-
-
 }

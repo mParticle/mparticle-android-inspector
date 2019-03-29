@@ -29,7 +29,7 @@
         android:orientation="vertical"
         android:visibility="visible">
 
-        <com.mparticle.inspector.customviews.JSONTextView
+        <com.mparticle.inspector.customviews.JsonTextView
             android:id="@+id/body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

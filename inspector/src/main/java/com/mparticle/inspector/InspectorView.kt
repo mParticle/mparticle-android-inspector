@@ -11,7 +11,6 @@ import android.support.v7.widget.RecyclerView
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
-import com.mparticle.ListenerImplementation
 import com.mparticle.inspector.adapters.BaseListAdapter
 import com.mparticle.inspector.adapters.ChainListAdapter
 import com.mparticle.inspector.adapters.RecentListAdapter
@@ -19,7 +18,7 @@ import com.mparticle.inspector.adapters.CategorizedListAdapter
 import com.mparticle.inspector.customviews.ResizeDraggableLayout
 import com.mparticle.inspector.events.Event
 
-class InspectorView(val application: Context, val listenerImplementation: ListenerImplementation, val startTime: Long) {
+class InspectorView(val application: Context, val dataManager: DataManager, val startTime: Long) {
 
     var small = true
     var i = 0;
@@ -36,7 +35,7 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
     var screenRoot: ViewGroup? = null
 
     init {
-        listenerImplementation.attachList(
+        dataManager.attachList(
                 {
                     listAdapter?.addItem(it)
                     if (objectMap[it.getDtoType()] == null) {
@@ -45,9 +44,6 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
                     objectMap[it.getDtoType()]!!.add(it)
                 },
                 { listAdapter?.refreshItem(it) })
-        Handler().postDelayed({
-            Exporter(objectMap)
-        }, 4000)
     }
 
     fun attach(activity: Activity) {
@@ -71,7 +67,7 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
 
         viewPager = inspectorContainer.findViewById(R.id.pager)
         viewPagerTitle = inspectorContainer.findViewById(R.id.pager_title)
-        viewPager.adapter = SwipeViewAdapter(application, listenerImplementation).also { listAdapter = it }
+        viewPager.adapter = SwipeViewAdapter(application, dataManager).also { listAdapter = it }
         viewPager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener {
             override fun onPageScrollStateChanged(p0: Int) {}
 
@@ -118,7 +114,7 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
     }
 
 
-    inner class SwipeViewAdapter(val context: Context, listenerImplementation: ListenerImplementation) : PagerAdapter() {
+    inner class SwipeViewAdapter(val context: Context, listenerImplementation: DataManager) : PagerAdapter() {
         var chainName: String? = null
 
         override fun isViewFromObject(p0: View, p1: Any): Boolean {
@@ -163,7 +159,7 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
                             adapter.setItem(id)
                         }
                     }
-                    chainName = listenerImplementation.getById(id)?.let { "${it.getShortName()}: ${it.name}" }
+                    chainName = listenerImplementation.getById(id)?.let { "${it.getShortName()}- ${it.name}" }
                     notifyDataSetChanged()
                     viewPager.setCurrentItem(3, true)
                 }
@@ -174,13 +170,13 @@ class InspectorView(val application: Context, val listenerImplementation: Listen
             if (views.size < position || views.getOrNull(position)?.itemView == null) {
                 when (position) {
                     0 -> {
-                        ListFragment(container, position, RecentListAdapter(context, HashMap(objectMap), displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true))
+                        ListFragment(container, position, RecentListAdapter(context, dataManager, HashMap(objectMap), displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true))
                     }
                     1 -> {
-                        ListFragment(container, position, CategorizedListAdapter(context, HashMap(objectMap), displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context))
+                        ListFragment(container, position, CategorizedListAdapter(context, dataManager, HashMap(objectMap), displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context))
                     }
                     2 -> {
-                        ListFragment(container, position, ChainListAdapter(context, displayCallback, startTime, chainViewId ?: -1, listenerImplementation), linearLayoutManager = LinearLayoutManager(context))
+                        ListFragment(container, position, ChainListAdapter(context, dataManager, displayCallback, startTime, chainViewId ?: -1, dataManager), linearLayoutManager = LinearLayoutManager(context))
                     }
                     else -> null
                 }?.let {

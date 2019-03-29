@@ -2,6 +2,11 @@ package com.mparticle.inspector
 
 import com.mparticle.inspector.events.*
 
+class Constants {
+    companion object {
+        val SESSION_ID = "uuid: "
+    }
+}
 
 enum class EventViewType {
     valTitle,
@@ -35,12 +40,12 @@ fun Event.getDtoType() : EventViewType {
 
 fun Event.getShortName(): String {
     return when (this) {
-        is NetworkRequest -> "network"
+        is NetworkRequest -> "Network"
+        is Kit -> "Kit"
+        is KitApiCall -> "Kit API"
+        is MessageEvent -> "DB"
+        is MessageTable -> "DB"
         is ApiCall -> "API"
-        is Kit -> "kit"
-        is KitApiCall -> "kit API"
-        is MessageEvent -> "msg"
-        is MessageTable -> "msg"
         else -> "no title :("
     }
 }

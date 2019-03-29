@@ -1,4 +1,4 @@
-package com.sample.mparticle.ztestapp
+package com.sample.testapp
 
 import android.app.Application
 import android.util.Log
@@ -6,18 +6,18 @@ import com.mparticle.MParticle
 import com.mparticle.MParticleOptions
 import com.mparticle.commerce.Product
 import com.mparticle.identity.*
-import com.mparticle.inspector.Inspector
+import java.util.*
 
 class TestAppApplication: Application(), IdentityStateListener, TaskFailureListener, TaskSuccessListener {
 
     override fun onCreate() {
         super.onCreate()
-
         val options = MParticleOptions.builder(this)
                 .credentials("288e1ccd4cdca947913108770df5a12e", "J8iG1IgsRL7fZ9WqhcgZYxSUr3ay1MuA3W-hJFMWTNswkryhvkDt6ZT9XhCpoXQ7")
                 .logLevel(MParticle.LogLevel.VERBOSE)
                 .uploadInterval(10)
                 .sessionTimeout(10)
+                .identify(IdentityApiRequest.withEmptyUser().email(Random().nextInt().toString()).build())
                 .identifyTask(
                         BaseIdentityTask()
                                 .addFailureListener(this)

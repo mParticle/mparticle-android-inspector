@@ -59,8 +59,8 @@ fun StackTraceElement.isClientMethod(): Boolean {
     return Inspector.getInstance()?.application?.packageName?.let { className.startsWith(it) } ?: false
 }
 
-fun StackTraceElement.apiMapName(threadName: String?): String {
-    return className + "." + methodName + "_" + (threadName ?: "none")
+fun String.apiMapName(threadName: String?): String {
+    return this + "_" + (threadName ?: "none")
 }
 
 fun <T> Array<T>.getFirstLastOf(startingAt: Int = 0, test: (T) -> Boolean): Int {

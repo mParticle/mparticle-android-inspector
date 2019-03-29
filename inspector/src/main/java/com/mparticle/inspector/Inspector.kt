@@ -2,54 +2,65 @@ package com.mparticle.inspector
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.os.Bundle
 import android.widget.FrameLayout
 import com.github.tbouron.shakedetector.library.ShakeDetector
-import com.mparticle.ExternalListenerImpl
-import com.mparticle.InternalListenerImpl
-import com.mparticle.ListenerImplementation
+import com.mparticle.MParticle
 import com.mparticle.inspector.utils.Utils
+import com.mparticle.internal.MPUtility
 import java.lang.ref.WeakReference
 
 class Inspector private constructor(val application: Application, showOnStartup: Boolean) {
 
     var widget: InspectorView? = null
-    var listener: ListenerImplementation = ListenerImplementation.instance(application.applicationContext)
     private var callbacks: Callbacks? = null
     var dimensions: Dimensions = Dimensions()
     var visible = false;
     var currentActivity = WeakReference<Activity>(null)
     val startTime = System.currentTimeMillis()
+    val sdkListener = SdkListenerImpl()
 
     companion object {
         private var instance: Inspector? = null
 
-        fun startWidget(appication: Application, showOnStartup: Boolean = false): Inspector {
-            if (instance == null) {
-                instance = Inspector(appication, showOnStartup)
+        fun startWidget(appication: Application, showOnStartup: Boolean = false) {
+            if (canStart(appication)) {
+                if (instance == null) {
+                    instance = Inspector(appication, showOnStartup)
+                }
             }
-            return instance!!
         }
 
         fun getInstance(): Inspector? {
             return instance
         }
+
+        private fun canStart(context: Context): Boolean {
+            return MPUtility.isAppDebuggable(context) ||
+                    context.packageName == MPUtility.getProp("debug.mparticle.listener")
+        }
     }
 
     init {
-        ExternalListenerImpl.instance.addListener(listener)
         callbacks = Callbacks()
-        InternalListenerImpl.attachToCore()
-        widget = InspectorView(application, listener, startTime)
+        MParticle.addListener(application, sdkListener)
+        MParticle.getInstance()?.Identity()?.apply {
+            addIdentityStateListener(sdkListener)
+            currentUser?.let { sdkListener.onUserIdentified(it) }
+        }
+        widget = InspectorView(application, sdkListener, startTime)
         application.registerActivityLifecycleCallbacks(callbacks)
         if (showOnStartup || Utils.isSimulator()) {
             show()
         }
+        try {
         ShakeDetector.create(application)  {
             if (!visible) {
                 show()
             }
         }
+        } catch (_: Exception) {}
     }
 
     fun stop() {
@@ -87,7 +98,7 @@ class Inspector private constructor(val application: Application, showOnStartup:
             if (activity != null) {
                 if (visible) {
                     if (widget == null) {
-                        widget = InspectorView(activity, listener, startTime)
+                        widget = InspectorView(activity, sdkListener, startTime)
                     }
                     widget?.attach(activity)
                 }

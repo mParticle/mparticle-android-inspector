@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
                 android:text="user attributes: "/>
-            <com.mparticle.inspector.customviews.JSONTextView
+            <com.mparticle.inspector.customviews.JsonTextView
                 android:id="@+id/userAttributes"
                 style="@style/mp_secondary_text"
                 android:layout_marginLeft="0dp"
@@ -58,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
                 android:text="user identities: "/>
-            <com.mparticle.inspector.customviews.JSONTextView
+            <com.mparticle.inspector.customviews.JsonTextView
                 android:id="@+id/userIdentities"
                 style="@style/mp_secondary_text"
                 android:layout_marginLeft="0dp"
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
                 android:text="consent state: "/>
-            <com.mparticle.inspector.customviews.JSONTextView
+            <com.mparticle.inspector.customviews.JsonTextView
                 android:id="@+id/consentState"
                 style="@style/mp_secondary_text"
                 android:layout_marginLeft="0dp"

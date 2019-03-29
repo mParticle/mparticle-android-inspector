@@ -46,7 +46,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="req body" />
-        <com.mparticle.inspector.customviews.JSONTextView
+        <com.mparticle.inspector.customviews.JsonTextView
             android:id="@+id/requestBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -76,7 +76,7 @@
             android:layout_height="wrap_content"
             android:text="resp body" />
 
-        <com.mparticle.inspector.customviews.JSONTextView
+        <com.mparticle.inspector.customviews.JsonTextView
             android:id="@+id/responseBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

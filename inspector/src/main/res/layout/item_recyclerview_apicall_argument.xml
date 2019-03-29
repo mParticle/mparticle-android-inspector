@@ -7,7 +7,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/type"/>
-    <com.mparticle.inspector.customviews.JSONTextView
+    <com.mparticle.inspector.customviews.JsonTextView
         android:id="@+id/value"
         style="@style/mp_tertiary_text"
         android:layout_width="wrap_content"

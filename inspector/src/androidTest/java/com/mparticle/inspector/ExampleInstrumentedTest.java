@@ -1,4 +1,4 @@
-package com.mparticle.inspector.
+package com.mparticle.inspector;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
