@@ -74,7 +74,7 @@ For example, if your code calls `MParticle.getInstance.logEvent()` you can selec
 
 **Click** the orange area of a "followable" event to be taken to the PathFinder view
 
-<img src="./Inspector_Clickable.png" width=200 height=200>
+<img src="./docs/Inspector_Clickable.png" width=200 height=200>
 
 ### Interacting with the Inspector
 
@@ -84,13 +84,13 @@ The Inspector can be pinned to either the top or bottom of the screen.
 
 **Press and Drag** the teal button on the right hand, middle limit of the Inspector view to resize the window
 
-<img src="./Inspector_Resize.png" width=200 height=100>
+<img src="./docs/Inspector_Resize.png" width=200 height=100>
 
 #### Pin to top/bottom, dismiss
 
 **Long Press and Drag** the area to the left or right of the mParticle logo.
 
-<img src="./Inspector_Drag.png" width=200 height=100>
+<img src="./docs/Inspector_Drag.png" width=200 height=100>
 
 * Drag to the top or bottom of the screen in order to pin to the top or bottom
 
@@ -100,10 +100,10 @@ The Inspector can be pinned to either the top or bottom of the screen.
 
 **Double Tap** the area to the left or right of the mParticle logo in order to make Inspector temporarily disappear for 5 seconds
 
-<img src="./Inspector_Drag.png" width=200 height=100>
+<img src="./docs/Inspector_Drag.png" width=200 height=100>
 
 #### Export Events
 
 **Click** the logo in order to get an Export prompt
 
-<img src="./Inspector_Export.png" width=200 height=100>
+<img src="./docs/Inspector_Export.png" width=200 height=100>
