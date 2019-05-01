@@ -14,7 +14,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.HashMap
 
-abstract class GraphManager: GraphListener, DataManager {
+abstract class GraphManager: SdkListener(), GraphListener, DataManager {
 
     private var parentsChildrenInternal: MutableMap<Int, MutableList<Int>> = ConcurrentHashMap()
     private var childrensParentsInternal: MutableMap<Int, MutableList<Int>> = ConcurrentHashMap()

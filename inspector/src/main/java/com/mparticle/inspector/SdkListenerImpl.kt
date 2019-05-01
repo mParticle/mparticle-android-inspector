@@ -151,7 +151,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         }
     }
 
-    override fun onUserIdentified(user: MParticleUser) {
+    override fun onUserIdentified(user: MParticleUser, previousUser: MParticleUser?) {
         allUsersDto.users = MParticle.getInstance()?.Identity()?.users?.run {
             removeAll { it.id == user.id }
             associate { allUser -> allUser to Mutable(false) }

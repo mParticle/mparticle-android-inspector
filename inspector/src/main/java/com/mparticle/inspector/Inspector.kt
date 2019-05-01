@@ -47,7 +47,7 @@ class Inspector private constructor(val application: Application, showOnStartup:
         MParticle.addListener(application, sdkListener)
         MParticle.getInstance()?.Identity()?.apply {
             addIdentityStateListener(sdkListener)
-            currentUser?.let { sdkListener.onUserIdentified(it) }
+            currentUser?.let { sdkListener.onUserIdentified(it, null) }
         }
         widget = InspectorView(application, sdkListener, startTime)
         application.registerActivityLifecycleCallbacks(callbacks)

@@ -33,7 +33,7 @@ class TestAppApplication: Application(), IdentityStateListener, TaskFailureListe
         super.onTerminate()
     }
 
-    override fun onUserIdentified(mParticleUser: MParticleUser) {
+    override fun onUserIdentified(mParticleUser: MParticleUser, previousUser: MParticleUser?) {
         Log.d("IDENTITY CHANGED", mParticleUser.id.toString() + "")
     }
 

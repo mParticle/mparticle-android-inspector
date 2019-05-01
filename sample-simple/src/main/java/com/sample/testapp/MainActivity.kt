@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListe
         showUser(identityApiResult.getUser())
     }
 
-    override fun onUserIdentified(mParticleUser: MParticleUser) {
+    override fun onUserIdentified(mParticleUser: MParticleUser, previousUser: MParticleUser?) {
         showUser(mParticleUser)
         MParticle.getInstance()?.Identity()?.removeIdentityStateListener(this)
     }
