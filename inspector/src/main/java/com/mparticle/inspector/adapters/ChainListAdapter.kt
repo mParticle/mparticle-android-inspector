@@ -5,13 +5,17 @@ import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
 import com.mparticle.inspector.*
-import com.mparticle.inspector.customviews.Status
-import com.mparticle.inspector.events.*
+import com.mparticle.shared.events.Status
+import com.mparticle.shared.events.*
 import com.mparticle.inspector.viewholders.*
-import com.mparticle.inspector.utils.Mutable
+import com.mparticle.shared.utils.Mutable
 import com.mparticle.inspector.utils.visible
+import com.mparticle.shared.EventViewType
+import com.mparticle.shared.ViewControllerManager
+import com.mparticle.shared.getDtoType
+import com.mparticle.shared.getShortName
 
-class ChainListAdapter(context: Context, dataManager: DataManager, displayCallback: (Int) -> Unit, startTime: Long, private var itemId: Int, val listenerImplementation: DataManager) : BaseListAdapter(context, startTime, displayCallback, dataManager) {
+class ChainListAdapter(context: Context, dataManager: DataManager, displayCallback: (Int) -> Unit, startTime: Long, private var itemId: Int) : BaseListAdapter(context, startTime, displayCallback, dataManager) {
 
     init {
         initialize()
@@ -23,7 +27,7 @@ class ChainListAdapter(context: Context, dataManager: DataManager, displayCallba
     }
 
     fun initialize() {
-        listenerImplementation.addCompositesUpdatedListener(true) { childrensParents, parentsChildren ->
+        dataManager.addCompositesUpdatedListener(true) { childrensParents, parentsChildren ->
             val chains = ArrayList<LinkedHashSet<ChainableEvent>>()
             childrensParents[itemId]?.forEach { chains.add(it) }
             parentsChildren[itemId]?.forEach { chains.add(LinkedHashSet(it.reversed()))}
@@ -39,14 +43,10 @@ class ChainListAdapter(context: Context, dataManager: DataManager, displayCallba
         }
     }
 
-    override fun addItem(event: Event) {
-        //do nothing
-    }
-
     private fun setChains(objs: List<Set<ChainableEvent>>) {
         val newObjects = ArrayList<Event>()
 
-        //Nest objects properly into their top level, display object.
+        //Nest events properly into their top level, display object.
         // For example, a MessageDto, should be nest inside of a MessageTableDTO
         objs.forEach { list ->
             newObjects.add(ChainTitle(getChainTitle(list)))
@@ -56,7 +56,7 @@ class ChainListAdapter(context: Context, dataManager: DataManager, displayCallba
                 when (obj) {
                     is KitApiCall -> {
                         if (kitDto?.kitId != obj.kitId) {
-                            kitDto = listenerImplementation.getActiveKit(obj.kitId)?.copy()
+                            kitDto = dataManager.getActiveKit(obj.kitId)?.copy()
                             kitDto?.apiCalls?.clear()
                         }
                         if (kitDto == null) {

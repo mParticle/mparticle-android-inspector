@@ -16,9 +16,13 @@ import com.mparticle.inspector.adapters.ChainListAdapter
 import com.mparticle.inspector.adapters.RecentListAdapter
 import com.mparticle.inspector.adapters.CategorizedListAdapter
 import com.mparticle.inspector.customviews.ResizeDraggableLayout
-import com.mparticle.inspector.events.Event
+import com.mparticle.shared.events.Event
+import com.mparticle.shared.EventViewType
+import com.mparticle.shared.ViewControllerManager
+import com.mparticle.shared.getDtoType
+import com.mparticle.shared.getShortName
 
-class InspectorView(val application: Context, val dataManager: DataManager, val startTime: Long) {
+class InspectorView(val application: Context, val dataManager: DataManager, val startTime: Long, val viewControllerManager: ViewControllerManager) {
 
     var small = true
     var i = 0;
@@ -29,22 +33,9 @@ class InspectorView(val application: Context, val dataManager: DataManager, val 
     lateinit var clientContainer: ViewGroup
     lateinit var inspectorContainer: ResizeDraggableLayout
 
-    val objectMap: MutableMap<EventViewType, LinkedHashSet<Event>> = HashMap()
 
     var clientView: View? = null
     var screenRoot: ViewGroup? = null
-
-    init {
-        dataManager.attachList(
-                {
-                    listAdapter?.addItem(it)
-                    if (objectMap[it.getDtoType()] == null) {
-                        objectMap[it.getDtoType()] = LinkedHashSet()
-                    }
-                    objectMap[it.getDtoType()]!!.add(it)
-                },
-                { listAdapter?.refreshItem(it) })
-    }
 
     fun attach(activity: Activity) {
         wrapperViewGroup = LayoutInflater.from(activity).inflate(R.layout.widget, null) as SpyLayout
@@ -124,15 +115,6 @@ class InspectorView(val application: Context, val dataManager: DataManager, val 
         val views = ArrayList<ListFragment>()
         var chainViewId: Int? = null
 
-
-        fun addItem(item: Event) {
-            views.forEach {
-                it.rvAdapter.also {
-                    it?.addItem(item)
-                }
-            }
-        }
-
         fun refreshItem(item: Event) {
             views.forEach {
                 it.rvAdapter.also {
@@ -170,13 +152,13 @@ class InspectorView(val application: Context, val dataManager: DataManager, val 
             if (views.size < position || views.getOrNull(position)?.itemView == null) {
                 when (position) {
                     0 -> {
-                        ListFragment(container, position, RecentListAdapter(context, dataManager, HashMap(objectMap), displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true))
+                        ListFragment(container, position, RecentListAdapter(context, dataManager, viewControllerManager.streamController, displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true))
                     }
                     1 -> {
-                        ListFragment(container, position, CategorizedListAdapter(context, dataManager, HashMap(objectMap), displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context))
+                        ListFragment(container, position, CategorizedListAdapter(context, dataManager, viewControllerManager.categoryController, displayCallback, startTime), linearLayoutManager = LinearLayoutManager(context))
                     }
                     2 -> {
-                        ListFragment(container, position, ChainListAdapter(context, dataManager, displayCallback, startTime, chainViewId ?: -1, dataManager), linearLayoutManager = LinearLayoutManager(context))
+                        ListFragment(container, position, ChainListAdapter(context, dataManager, displayCallback, startTime, chainViewId ?: -1), linearLayoutManager = LinearLayoutManager(context))
                     }
                     else -> null
                 }?.let {

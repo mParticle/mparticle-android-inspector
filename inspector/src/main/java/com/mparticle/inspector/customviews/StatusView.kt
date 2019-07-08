@@ -8,15 +8,10 @@ import android.view.View
 import android.widget.FrameLayout
 import com.mparticle.inspector.R
 
-import com.mparticle.inspector.customviews.Status.*
+import com.mparticle.shared.events.Status.*
 import com.mparticle.inspector.utils.visible
+import com.mparticle.shared.events.Status
 
-enum class Status {
-    Red,
-    Green,
-    Yellow,
-    None
-}
 class StatusView(context: Context, attributeSet: AttributeSet) : FrameLayout(context, attributeSet) {
 
     var statusLight : View

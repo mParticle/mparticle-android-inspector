@@ -4,6 +4,8 @@ import android.view.View
 import android.widget.TextView
 import com.mparticle.identity.MParticleUser
 import com.mparticle.inspector.Inspector
+import com.mparticle.inspector.UserWrapper
+import com.mparticle.shared.User
 import org.json.JSONArray
 import org.json.JSONObject
 import java.lang.ref.WeakReference
@@ -219,20 +221,9 @@ fun TextView.expanded(expanded: Boolean) {
     }
 }
 
-fun MParticleUser.userAttributesJson(): JSONObject {
-    return JSONObject(userAttributes)
-}
-
-fun MParticleUser.userIdentitiesJson(): JSONObject {
-    return userIdentities.entries.fold(org.json.JSONObject()) { json, entry ->
-        json.put(entry.key.name, entry.value)
-    }
-}
-
-fun TextView.setJsonHandling(key: String, expanded: Boolean, json: JSONObject?) {
-
-    when (json?.length()) {
-        null, 0 -> {
+fun TextView.setJsonHandling(key: String, expanded: Boolean, json: String?) {
+    when (json?.length) {
+        null, in 0..4 -> {
             text = "$key = {}"
         }
         else -> {
@@ -243,4 +234,31 @@ fun TextView.setJsonHandling(key: String, expanded: Boolean, json: JSONObject?) 
             }
         }
     }
+}
+
+fun JSONObject.toMap(): Map<String, Any> {
+    val map = HashMap<String, Any>()
+    keys().forEach {
+        val value = get(it)
+        when(value) {
+            is JSONObject -> map.put(it, value.toMap())
+            else -> map.put(it, value)
+        }
+    }
+    return map
+}
+
+fun MParticleUser.wrapper(): User {
+    return UserWrapper(this)
+}
+
+fun Map<*, *>.json(): JSONObject {
+    val json = JSONObject()
+    entries.forEach {
+        when(it.value) {
+            is Map<*, *> -> json.put(it.key.toString(), (it.value as Map<*, *>).json())
+            else -> json.put(it.key.toString(), it.value)
+        }
+    }
+    return json
 }

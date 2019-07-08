@@ -9,17 +9,19 @@ import com.github.tbouron.shakedetector.library.ShakeDetector
 import com.mparticle.MParticle
 import com.mparticle.inspector.utils.Utils
 import com.mparticle.internal.MPUtility
+import com.mparticle.shared.ViewControllerManager
 import java.lang.ref.WeakReference
 
 class Inspector private constructor(val application: Application, showOnStartup: Boolean) {
 
     var widget: InspectorView? = null
-    private var callbacks: Callbacks? = null
+    private var callbacks: Callbacks = Callbacks()
     var dimensions: Dimensions = Dimensions()
     var visible = false;
     var currentActivity = WeakReference<Activity?>(null)
     val startTime = System.currentTimeMillis()
     val sdkListener = SdkListenerImpl()
+    val viewControllerManager = ViewControllerManager()
 
 
     companion object {
@@ -46,13 +48,13 @@ class Inspector private constructor(val application: Application, showOnStartup:
     }
 
     init {
-        callbacks = Callbacks()
+        sdkListener.attachList({viewControllerManager.addEvent(it)})
         MParticle.addListener(application, sdkListener)
         MParticle.getInstance()?.Identity()?.apply {
             addIdentityStateListener(sdkListener)
             currentUser?.let { sdkListener.onUserIdentified(it, null) }
         }
-        widget = InspectorView(application, sdkListener, startTime)
+        widget = InspectorView(application, sdkListener, startTime, viewControllerManager)
         application.registerActivityLifecycleCallbacks(callbacks)
         if (showOnStartup || Utils.isSimulator()) {
             show()
@@ -101,7 +103,7 @@ class Inspector private constructor(val application: Application, showOnStartup:
             if (activity != null) {
                 if (visible) {
                     if (widget == null) {
-                        widget = InspectorView(activity, sdkListener, startTime)
+                        widget = InspectorView(activity, sdkListener, startTime, viewControllerManager)
                     }
                     widget?.attach(activity)
                 }

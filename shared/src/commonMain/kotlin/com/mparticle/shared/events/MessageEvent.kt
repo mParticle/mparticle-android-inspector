@@ -1,6 +1,6 @@
-package com.mparticle.inspector.events
+package com.mparticle.shared.events
 
-import com.mparticle.inspector.customviews.Status
+import com.mparticle.shared.events.Status
 import org.json.JSONObject
 
 class MessageEvent(tableName: String,

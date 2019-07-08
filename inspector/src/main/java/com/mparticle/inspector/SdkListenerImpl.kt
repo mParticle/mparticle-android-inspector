@@ -4,13 +4,14 @@ import com.mparticle.*
 import com.mparticle.identity.IdentityStateListener
 import com.mparticle.identity.MParticleUser
 import com.mparticle.inspector.Constants.Companion.SESSION_ID
-import com.mparticle.inspector.customviews.Status
-import com.mparticle.inspector.events.*
-import com.mparticle.inspector.utils.Mutable
+import com.mparticle.shared.events.*
 import com.mparticle.inspector.utils.milliToSecondsString
 import com.mparticle.inspector.utils.printClass
+import com.mparticle.inspector.utils.wrapper
 import com.mparticle.internal.InternalSession
 import com.mparticle.internal.listeners.GraphManager
+import com.mparticle.shared.events.Status
+import com.mparticle.shared.utils.Mutable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -20,19 +21,18 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
     private var networkRequests: MutableMap<SdkListener.Endpoint, Int> = HashMap()
     private var identityListenerAdded = false
 
-    var addItemCallback: ((Event) -> Unit)? = null
-    var refreshItemCallback: ((Event) -> Unit)? = null
-    val itemList = ArrayList<Event>()
+    private var addItemCallback: ((Event) -> Unit)? = null
+    private val itemQueue = ArrayList<Event>()
 
-    val mParticleState = createAddMParticleState().apply { priority = 5 }
-    val sessionDto = createSessionStatus(null).apply { priority = 4 }
-    val currentUserDto = StateCurrentUser(null).apply { priority = 3 }
-    val previousSessions = StateAllSessions(HashMap()).apply { priority = 2 }
-    val allUsersDto = StateAllUsers(HashMap()).apply { priority = 1 }
+    private val mParticleState = createAddMParticleState().apply { priority = 5 }
+    private val sessionDto = createSessionStatus(null).apply { priority = 4 }
+    private val currentUserDto = StateCurrentUser(null).apply { priority = 3 }
+    private val previousSessions = StateAllSessions(HashMap()).apply { priority = 2 }
+    private val allUsersDto = StateAllUsers(HashMap()).apply { priority = 1 }
 
-    val messageMap = HashMap<Int, MessageEvent>()
-    val networkMap = HashMap<Int, NetworkRequest>()
-    val activeKits = HashMap<Int, Kit>()
+    private val messageMap = HashMap<Int, MessageEvent>()
+    private val networkMap = HashMap<Int, NetworkRequest>()
+    private val activeKits = HashMap<Int, Kit>()
 
     init {
         addItem(mParticleState)
@@ -41,13 +41,10 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         addItem(allUsersDto)
     }
 
-    override fun attachList(addItemCallback: ((Event) -> Unit)?, refreshItemCallback: ((Event) -> Unit)?) {
+    override fun attachList(addItemCallback: (Event) -> Unit) {
         this.addItemCallback = addItemCallback
-        this.refreshItemCallback = refreshItemCallback
-        if (addItemCallback != null) {
-            itemList.forEach { addItemCallback(it) }
-            itemList.clear()
-        }
+        itemQueue.forEach { addItemCallback(it) }
+        itemQueue.clear()
     }
 
     override fun getActiveKit(id: Int): Kit? {
@@ -63,22 +60,21 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         methodName = split[split.size - 1]
 
 
-        trackableObjects.map { argument ->
-            MethodArgument(argument.obj.javaClass, argument.obj.printClass(), argument.trackingId)
-        }.also {
-            val status = when (used) {
-                true -> Status.Green
-                false -> Status.Red
-            }
-            activeKits.get(kitId)?.apply {
-                val apiCallDto = KitApiCall(kitId, methodName, it, System.currentTimeMillis(), status = status, id = id)
-                apiCallDto.methodArguments?.forEach { argument ->
-                    if (argument.id != null) {
-                        chainableEventDtos[argument.id] = apiCallDto
-                    }
+        val arguments = trackableObjects.map { argument ->
+            MethodArgument(argument.obj.javaClass.simpleName, argument.obj.printClass(), argument.trackingId)
+        }
+        val status = when (used) {
+            true -> Status.Green
+            false -> Status.Red
+        }
+        activeKits.get(kitId)?.apply {
+            val apiCallDto = KitApiCall(kitId, methodName, arguments, System.currentTimeMillis(), status = status, id = id)
+            apiCallDto.methodArguments?.forEach { argument ->
+                argument.id?.let { id ->
+                    chainableEventDtos[id] = apiCallDto
                 }
-                addItem(apiCallDto)
             }
+            addItem(apiCallDto)
         }
     }
 
@@ -90,13 +86,13 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         if (isExternal || objectOfInterest) {
             toTrackableObjects(id, objectList)
                     .map { argument ->
-                        MethodArgument(argument.obj.javaClass, argument.obj.printClass(), argument.trackingId).copy()
+                        MethodArgument(argument.obj.javaClass.simpleName, argument.obj.printClass(), argument.trackingId).copy()
                     }.also { arguments ->
                         ApiCall(methodName, arguments, System.currentTimeMillis(), id = id)
                                 .let { dto ->
                                     arguments.forEach { argument ->
-                                        if (argument.id != null) {
-                                            chainableEventDtos[argument.id] = dto
+                                        argument.id?.let { id ->
+                                            chainableEventDtos[id] = dto
                                         }
                                     }
                                     if (isExternal) {
@@ -128,7 +124,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
             compositeObjectIds(it, id)
         }
         val typeName = type.name.toLowerCase().capitalize()
-        val dto = NetworkRequest(typeName, Status.Yellow, url, body, System.currentTimeMillis(), id = id)
+        val dto = NetworkRequest(typeName, Status.Yellow, url, body.toString(), System.currentTimeMillis(), id = id)
         networkMap.put(id, dto)
         addItem(dto)
         updateObjectGraph()
@@ -141,10 +137,10 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
             if (networkMap.containsKey(id)) {
                 networkMap.get(id)?.apply {
                     status = if (code in 200..299 || code == 304) Status.Green else Status.Red
-                    responseBody = response
+                    responseBody = response.toString()
                     responseCode = code.toString()
                 }?.also {
-                    refreshItem(it)
+                    addItem(it)
                 }
                 networkMap.remove(id)
             }
@@ -154,9 +150,9 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
     override fun onUserIdentified(user: MParticleUser, previousUser: MParticleUser?) {
         allUsersDto.users = MParticle.getInstance()?.Identity()?.users?.run {
             removeAll { it.id == user.id }
-            associate { allUser -> allUser to Mutable(false) }
+            associate { user -> user.wrapper() to Mutable(false) }
         } ?: HashMap()
-        currentUserDto.user = user
+        currentUserDto.user = user.wrapper()
     }
 
 
@@ -177,13 +173,13 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
                 if (previousSessions.sessions.size == 1) {
                     addItem(previousSessions)
                 } else {
-                    refreshItem(previousSessions)
+                    addItem(previousSessions)
                 }
             }
         }
 
         sessionDto.obj = internalSession
-        refreshItem(sessionDto)
+        addItem(sessionDto)
     }
 
     override fun onKitDetected(kitId: Int) {
@@ -328,14 +324,9 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
     override fun addItem(obj: Event) {
         super.addItem(obj)
         GlobalScope.launch(Dispatchers.Main) {
-            addItemCallback?.invoke(obj) ?: itemList.add(obj)
+            addItemCallback?.invoke(obj) ?: itemQueue.add(obj)
         }
     }
-
-    private fun refreshItem(dto: Event) {
-        refreshItemCallback?.invoke(dto)
-    }
-
 
     companion object {
         private var instance: SdkListenerImpl? = null

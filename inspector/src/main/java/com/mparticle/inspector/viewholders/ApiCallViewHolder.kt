@@ -4,8 +4,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.mparticle.inspector.customviews.StatusView
 import com.mparticle.inspector.R
+import com.mparticle.inspector.customviews.StatusView
 
 class ApiCallViewHolder(imageView: View, parent: ViewGroup? = null,
                         val call_description: TextView = imageView.findViewById(R.id.call_description),

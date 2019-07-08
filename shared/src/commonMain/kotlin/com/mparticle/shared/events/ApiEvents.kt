@@ -1,6 +1,6 @@
-package com.mparticle.inspector.events
+package com.mparticle.shared.events
 
-import com.mparticle.inspector.customviews.Status
+import com.mparticle.shared.events.Status
 
 open class ApiCall(endpoint: String, var methodArguments: List<MethodArgument>?, var timeSent: Long, var expanded: Boolean = false, id: Int, var status: Status? = null): ChainableEvent(id, endpoint) {
     open fun copy(): ApiCall {
@@ -15,4 +15,4 @@ class KitApiCall(val kitId: Int, endpoint: String, methodArguments: List<MethodA
     }
 }
 
-data class MethodArgument(val clazz: Class<Any>, val value: Any, val id: Int? = null)
+data class MethodArgument(val className: String, val value: Any, val id: Int? = null)

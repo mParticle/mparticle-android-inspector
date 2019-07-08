@@ -8,6 +8,9 @@ import android.widget.FrameLayout
 import android.widget.RelativeLayout
 import com.mparticle.inspector.R
 import com.mparticle.inspector.Inspector
+import android.widget.EditText
+import com.mparticle.inspector.Exporter
+import com.mparticle.internal.Logger
 
 
 class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): RelativeLayout(context, attrs) {
@@ -194,6 +197,29 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
             rightMargin = (this@ResizeDraggableLayout.width * .35).toInt()
             topMargin = (this@ResizeDraggableLayout.height * .05).toInt()
         }
+    }
+
+    internal fun showEmailPrompt() {
+        val input = EditText(context)
+        val alertDialog = AlertDialog.Builder(context).create()
+        alertDialog.setTitle("Export")
+        alertDialog.setView(input)
+        alertDialog.setMessage("Enter email for export log")
+        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK") { _, _ ->
+            Inspector.getInstance()?.viewControllerManager?.allEvents?.let {
+                Exporter(it).email(input.text.toString())
+            } ?: Logger.error("Inpector instance is null, unable to export events")
+        }
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+        alertDialog.show()
+        (input.layoutParams as FrameLayout.LayoutParams).apply {
+            var density = context.resources.displayMetrics.density
+            leftMargin = (density * 8 + .5).toInt()
+            rightMargin = (density * 8 + .5).toInt()
+        }
+        input.requestLayout()
     }
 
     private fun shouldHide(currentX: Float): Boolean {

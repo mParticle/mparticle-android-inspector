@@ -1,15 +1,14 @@
-package com.mparticle.inspector.events
+package com.mparticle.shared.events
 
-import com.mparticle.identity.MParticleUser
-import com.mparticle.inspector.customviews.Status
-import com.mparticle.inspector.utils.Mutable
-import com.mparticle.internal.InternalSession
+import com.mparticle.shared.User
+import com.mparticle.shared.events.Status
+import com.mparticle.shared.utils.Mutable
 
 open class StateEvent(title: String, var priority: Int = 0, var expanded: Boolean = false): Event(title)
 
-data class StateCurrentUser(var user: MParticleUser?, var attributesExpanded: Boolean = false, var identitiesExpanded: Boolean = false): StateEvent("Current User")
+data class StateCurrentUser(var user: User?, var attributesExpanded: Boolean = false, var identitiesExpanded: Boolean = false): StateEvent("Current User")
 
-data class StateAllUsers(var users: Map<MParticleUser, Mutable<Boolean>>): StateEvent("Previous Users")
+data class StateAllUsers(var users: Map<User, Mutable<Boolean>>): StateEvent("Previous Users")
 
 data class StateAllSessions(var sessions: MutableMap<StateStatus, Mutable<Boolean>>): StateEvent("Previous Sessions")
 

@@ -1,1 +1,1 @@
-include ':inspector', ':sample-simple'
+include ':inspector', ':sample-simple', ':shared'

@@ -6,17 +6,22 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.mparticle.inspector.Constants.Companion.SESSION_ID
 import com.mparticle.inspector.DataManager
-import com.mparticle.inspector.EventViewType
-import com.mparticle.inspector.EventViewType.*
+import com.mparticle.inspector.R
 import com.mparticle.inspector.customviews.JsonTextView
-import com.mparticle.inspector.events.*
+import com.mparticle.shared.events.*
+import com.mparticle.inspector.utils.json
+import com.mparticle.inspector.utils.setChainClickable
+import com.mparticle.inspector.utils.setJsonHandling
+import com.mparticle.inspector.utils.visible
 import com.mparticle.inspector.viewholders.*
-import com.mparticle.inspector.utils.*
+import com.mparticle.shared.EventViewType
+import com.mparticle.shared.EventViewType.*
+import com.mparticle.shared.ViewControllerManager
+import com.mparticle.shared.controllers.BaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -25,10 +30,9 @@ import org.json.JSONObject
 import java.util.HashMap
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
-import com.mparticle.inspector.R
 
 
-abstract class BaseListAdapter(val context: Context, val startTime: Long, val displayCallback: (Int) -> Unit, val dataManager: DataManager) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+abstract class BaseListAdapter(val context: Context, val startTime: Long, val displayCallback: (Int) -> Unit, val dataManager: DataManager, val controller: BaseController? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var objects: List<Event> = ArrayList()
     val inflater = LayoutInflater.from(context)
     var listView: RecyclerView? = null
@@ -38,6 +42,23 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
     val titleApiCall = "Api Usage"
     val titleKit = "Kit State"
     val titleState = "SDK State"
+
+    init {
+        controller?.apply {
+            registerAddedListener { position, item ->
+                refreshData(events, position, 1, false)
+            }
+            registerRefreshListener { position, item ->
+                refreshData(events, position)
+            }
+            registerRemovedListener { position, count ->
+                refreshData(events, position, count, true)
+            }
+            registerListUpdatedListener {
+                refreshData(events)
+            }
+        }
+    }
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -85,8 +106,6 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
         bindAllViewHolders(holder, obj)
     }
 
-    abstract fun addItem(event: Event)
-
     open fun bindAllViewHolders(holder: RecyclerView.ViewHolder?, event: Event) {}
 
     open fun createAllViewHolders(viewHolder: RecyclerView.ViewHolder) {}
@@ -133,6 +152,10 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
         viewHolder.apply {
             title.text = obj.title
             this.dropDown.isClickable = false
+            count.apply {
+                visible(!obj.expanded || obj.count == 0)
+                text = obj.count.toString()
+            }
         }
     }
 
@@ -193,11 +216,11 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
             obj.methodArguments?.forEach { argument ->
                 val argumentView = inflater.inflate(R.layout.item_recyclerview_apicall_argument, expanded, false)
                 argumentView.findViewById<TextView>(R.id.type).apply {
-                    text = "${argument.clazz.simpleName}: "
+                    text = "${argument.className}: "
                 }
                 argumentView.findViewById<JsonTextView>(R.id.value).apply {
                     if (argument.value is JSONObject) {
-                        bindJson(argument.value)
+                        bindJson(argument.value as JSONObject)
                     } else {
                        setText(argument.value.toString())
                     }
@@ -299,9 +322,9 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                     obj.identitiesExpanded = !obj.identitiesExpanded
                     refreshData()
                 }
-                userAttributes.bindJson(obj.user?.userAttributesJson())
-                userIdentities.bindJson(obj.user?.userIdentitiesJson())
-                consentState.bindJson(obj.user?.consentState?.gdprConsentState?.printClass() as? JSONObject)
+                userAttributes.bindJson(obj.user?.userAttributes?.json())
+                userIdentities.bindJson(obj.user?.userIdentities?.json())
+                consentState.bindJson(obj.user?.consentState?.json())
             }
         }
     }
@@ -381,8 +404,8 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                 val innerExpanded = view.findViewById<ViewGroup>(R.id.expandedArea)
                 innerExpanded.visible(userExpanded.value.value)
                 HashMap<String, Any>().apply {
-                    put("userAttributes: ", userExpanded.key.userAttributesJson())
-                    put("userIdentities: ", userExpanded.key.userIdentitiesJson())
+                    put("userAttributes: ", userExpanded.key.userAttributes.json())
+                    put("userIdentities: ", userExpanded.key.userIdentities.json())
                 }.forEach {
                     val keyValueViewHolder = KeyValueHorizontal(innerExpanded, context)
                     keyValueViewHolder.key.text = it.key
@@ -450,7 +473,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
     internal fun refreshDataObject(obj: Event) {
         fun refresh(obj: Event) {
             val objects = getObjects()
-            var index = objects.indexOf(obj)
+            val index = objects.indexOf(obj)
             if (index >= 0) {
                 //sometimes "indexOf" returns true, even though it isn't a referential equality. In that
                 //case, manually replace the object
@@ -482,21 +505,21 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
         return ArrayList(objects)
     }
 
-    internal fun refreshData(objectsList: List<Event> = objects, position: Int? = null, count: Int? = null, removed: Boolean? = null) {
-        fun refresh(position: Int? = null, count: Int? = null, removed: Boolean? = null) {
+    internal fun refreshData(objectsList: List<Event> = objects, position: Int? = null, count: Int = 1, removed: Boolean? = null) {
+        fun refresh(position: Int? = null, count: Int, removed: Boolean? = null) {
             objects = objectsList
             if (position == null) {
                 notifyDataSetChanged()
             } else {
                 when (removed) {
                     true -> {
-                        notifyItemRangeRemoved(position, count ?: 1)
+                        notifyItemRangeRemoved(position, count)
                     }
                     false -> {
-                        notifyItemRangeInserted(position, count ?: 1)
+                        notifyItemRangeInserted(position, count)
                     }
                     null -> {
-                        notifyItemChanged(position, count ?: 1)
+                        notifyItemChanged(position, count)
                     }
                 }
             }

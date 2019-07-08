@@ -40,10 +40,15 @@ class JsonTextView(context: Context, attributes: AttributeSet) : RecyclerView(co
         }
     }
 
-    fun bindJson(jsonStr: String) {
-        mAdapter = null
-        mAdapter = JsonViewAdapter(jsonStr)
-        adapter = mAdapter
+    fun bindJson(jsonStr: String?) {
+        //minimum length for a valid json w/more than 0 items is 5 ("{a:b}"
+        if (jsonStr == null || jsonStr.length < 5) {
+            setText("-")
+        } else {
+            mAdapter = null
+            mAdapter = JsonViewAdapter(jsonStr)
+            adapter = mAdapter
+        }
     }
 
     fun bindJson(array: JSONArray) {

@@ -18,17 +18,17 @@ class JsonViewAdapter: RecyclerView.Adapter<JsonViewAdapter.JsonItemViewHolder> 
     private var mJSONArray: JSONArray? = null
 
     constructor(jsonStr: String) {
-        var `object`: Any? = null
+        var obj: Any? = null
         try {
-            `object` = JSONTokener(jsonStr).nextValue()
+            obj = JSONTokener(jsonStr).nextValue()
         } catch (e: JSONException) {
             e.printStackTrace()
         }
 
-        if (`object` is JSONObject) {
-            mJSONObject = `object`
-        } else if (`object` is JSONArray) {
-            mJSONArray = `object`
+        if (obj is JSONObject) {
+            mJSONObject = obj
+        } else if (obj is JSONArray) {
+            mJSONArray = obj
         } else {
             throw IllegalArgumentException("jsonStr is illegal.")
         }

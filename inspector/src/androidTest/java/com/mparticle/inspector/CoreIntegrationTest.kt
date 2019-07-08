@@ -4,7 +4,7 @@ import android.content.Context
 import com.mparticle.MParticle
 import com.mparticle.MParticleOptions
 import com.mparticle.SdkListener
-import com.mparticle.inspector.utils.Mutable
+import com.mparticle.shared.utils.Mutable
 import junit.framework.Assert.*
 import org.junit.Test
 

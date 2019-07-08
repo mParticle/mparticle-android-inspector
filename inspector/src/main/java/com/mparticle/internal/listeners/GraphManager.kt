@@ -5,8 +5,8 @@ import android.os.Message
 import com.mparticle.MPEvent
 import com.mparticle.SdkListener
 import com.mparticle.inspector.DataManager
-import com.mparticle.inspector.events.ChainableEvent
-import com.mparticle.inspector.events.Event
+import com.mparticle.shared.events.ChainableEvent
+import com.mparticle.shared.events.Event
 import com.mparticle.inspector.utils.*
 import org.json.JSONObject
 import java.lang.ref.WeakReference
