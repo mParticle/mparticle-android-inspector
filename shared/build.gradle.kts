@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 plugins {
     id("com.android.library")
     id("kotlin-multiplatform")
-//    id("maven-publish")
+    id("maven-publish")
     id("kotlin-dce-js")
 }
 
@@ -21,8 +21,11 @@ kotlin {
 
 
 
-        android()
+        android {
+            publishLibraryVariants("release")
+        }
         js()
+        jvm()
 
         (targetFromPreset(iOSTarget, "ios") as KotlinNativeTarget)
                 .binaries
@@ -33,17 +36,14 @@ kotlin {
 
     sourceSets.let {
         val main = it.maybeCreate("commonMain")
-        val android = it.maybeCreate("androidMain")
         val js = it.maybeCreate("jsMain")
         val ios = it.maybeCreate("iosMain")
 
         val test = it.maybeCreate("commonTest")
         val androidTest = it.maybeCreate("androidTest")
 
-
         main.dependencies {
             implementation("org.jetbrains.kotlin:kotlin-stdlib-common")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.0")
             implementation(kotlin("reflect"))
         }
 
@@ -53,7 +53,7 @@ kotlin {
         }
 
         test.dependencies {
-            //            implementation("org.jetbrains.kotlin:kotlin-test-common")
+//            implementation("org.jetbrains.kotlin:kotlin-test-common")
 //            implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
             implementation("org.jetbrains.kotlin:kotlin-stdlib-common")
             implementation(kotlin("test-common"))
@@ -71,7 +71,7 @@ kotlin {
         this.sourceMap = true
         this.sourceMapEmbedSources = "always"
         this.moduleKind = "umd"
-        this.noStdlib = false
+        this.noStdlib = true
         this.metaInfo = false
         this.main = "call"
     }
@@ -83,9 +83,4 @@ android {
     }
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-}
-
-
-repositories {
-    mavenCentral()
 }

@@ -15,7 +15,7 @@ class CategorizedListAdapterTest {
     @Test
     fun testEmptyList() {
         val categoryController = viewControllerManager.categoryController
-        assertEquals(categoryController.getItems().size, categoryController.categoryTitles.size)
+        assertEquals(categoryController.categoryTitles.size, categoryController.getItems().size)
         categoryController.getItems().forEachIndexed { i, event ->
             assertEquals(event, categoryController.categoryTitles[i])
         }

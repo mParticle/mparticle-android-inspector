@@ -156,7 +156,7 @@ class CategoryController(private val activeKitsCallback: (Int) -> Kit?): BaseCon
     }
 
     private var onExpandCallback: (expanded: Boolean, obj: CategoryTitle) -> Unit = { expanded, obj ->
-        obj.expanded = !obj.expanded
+        obj.expanded = expanded
         obj.count = objectMap.get(obj.itemType)?.size ?: 0
         if (obj.expanded) {
             objectMap.get(obj.itemType)?.let {

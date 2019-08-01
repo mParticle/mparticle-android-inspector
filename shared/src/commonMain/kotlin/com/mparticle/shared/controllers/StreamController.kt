@@ -6,7 +6,7 @@ import com.mparticle.shared.getDtoType
 import com.mparticle.shared.utils.Mutable
 
 class StreamController: BaseController() {
-    val itemLimit = 100
+    var eventCountLimit = 100
 
     override fun addItem(item: Event) {
         var obj = item
@@ -22,8 +22,8 @@ class StreamController: BaseController() {
         objectList
                 .indexOfFirst { obj.createdTime > it.createdTime }
                 .let {
-                    if (objectList.size > itemLimit) {
-                        onRemoved(objectList.subList(0, itemLimit - 1), itemLimit - 1, objectList.size - itemLimit)
+                    if (objectList.size > eventCountLimit) {
+                        onRemoved(objectList.subList(0, eventCountLimit - 1), eventCountLimit - 1, objectList.size - eventCountLimit)
                     }
                     if (it > 0) {
                         objectList.add(it, obj)

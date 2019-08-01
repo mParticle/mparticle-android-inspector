@@ -4,6 +4,7 @@ import com.mparticle.shared.events.*
 import com.mparticle.shared.controllers.CategoryController
 import com.mparticle.shared.controllers.StreamController
 import com.mparticle.shared.utils.Mutable
+import kotlin.jvm.JvmStatic
 
 class ViewControllerManager {
     val streamController = StreamController()
@@ -26,6 +27,18 @@ class ViewControllerManager {
             events.add(item)
             streamController.addItem(item)
             categoryController.addItem(item)
+        }
+    }
+
+    companion object {
+        private var instance: ViewControllerManager? = null
+
+        @JvmStatic
+        fun getInstance(): ViewControllerManager {
+            if (instance == null) {
+                instance = ViewControllerManager()
+            }
+            return instance!!
         }
     }
 }

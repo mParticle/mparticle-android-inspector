@@ -14,7 +14,8 @@ enum class EventViewType {
     valStateList,
     valStateStatus,
     valChainTitle,
-    valNext
+    valNext,
+    valUnknown
 }
 
 fun Event.getDtoType() : EventViewType {
@@ -27,7 +28,7 @@ fun Event.getDtoType() : EventViewType {
         is StateEvent -> EventViewType.valStateGeneric
         is MessageTable -> EventViewType.valMessageTable
         is ChainTitle -> EventViewType.valChainTitle
-        else -> throw RuntimeException("${this::class.simpleName} not implemented for ViewType")
+        else -> EventViewType.valUnknown//throw RuntimeException("${this::class.simpleName} not implemented for ViewType")
     }
 }
 

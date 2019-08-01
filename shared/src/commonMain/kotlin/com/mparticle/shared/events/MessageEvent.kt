@@ -1,12 +1,12 @@
 package com.mparticle.shared.events
 
+import com.mparticle.shared.PlatformApis
 import com.mparticle.shared.events.Status
-import org.json.JSONObject
 
 class MessageEvent(tableName: String,
-                   var body: JSONObject,
+                   var body: String,
                    var status: Status,
-                   var storedTime: Long = System.currentTimeMillis(),
+                   var storedTime: Long = PlatformApis().getTimestamp(),
                    var deleteTime: Long? = null,
                    var bodyExpanded: Boolean = false,
                    var rowId: Long,

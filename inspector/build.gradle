@@ -27,6 +27,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
 }
 
 configurations {
@@ -35,13 +40,18 @@ configurations {
 
 repositories {
     mavenCentral()
+    flatDir {
+        dirs 'libs'
+    }
 }
 
 dependencies {
     ktlint "com.github.shyiko:ktlint:0.15.0"
 
     implementation project(':shared')
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+//    implementation (name: 'shared-controller', ext: 'jar')
+//    implementation fileTree(include: ['shared-controller.jar'], dir: 'libs')
+
     implementation 'com.android.support:recyclerview-v7:28.0.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
@@ -66,3 +76,22 @@ task ktlint(type: JavaExec, group: "verification") {
     main = "com.github.shyiko.ktlint.Main"
     args "src/**/*.kt"
 }
+
+// for .aar
+//task copySharedIntoLibs(type: Copy){
+//    dependsOn ':shared:assemble'
+//    from "$project.rootDir/shared/build/outputs/aar/shared-release.aar"
+//    rename { _ -> "shared-controller.aar" }
+//    into "libs"
+//}
+
+//for .jar
+task copySharedIntoLibs(type: Copy){
+    dependsOn ':shared:assemble'
+    from "$project.rootDir/shared/build/libs/shared-jvm-0.7-SNAPSHOT.jar"
+    rename { _ -> "shared-controller.jar" }
+    into "libs"
+}
+
+
+preBuild.dependsOn copySharedIntoLibs

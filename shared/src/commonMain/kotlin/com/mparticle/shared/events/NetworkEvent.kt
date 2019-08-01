@@ -1,7 +1,5 @@
 package com.mparticle.shared.events
 
-import kotlinx.serialization.json.JsonObject
-
 class NetworkRequest(title: String,
                      var status: Status,
                      val url: String,

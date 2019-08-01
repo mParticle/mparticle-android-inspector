@@ -112,7 +112,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         if (id == null) {
             id = nextId()
         }
-        val messageDto = MessageEvent(tableName, jsonObject, Status.Yellow, rowId = primaryKey, id = id)
+        val messageDto = MessageEvent(tableName, jsonObject.toString(), Status.Yellow, rowId = primaryKey, id = id)
         messageMap.put(id, messageDto)
         addItem(messageDto)
     }
