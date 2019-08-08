@@ -3,8 +3,14 @@ package com.mparticle.shared.events
 
 import com.mparticle.shared.PlatformApis
 import com.mparticle.shared.utils.Mutable
+import kotlinx.serialization.Serializable
 
-open class Event(val name: String, val createdTime: Long = PlatformApis().getTimestamp())
+@Serializable
+open class Event(val name: String, val createdTime: Long = PlatformApis().getTimestamp()) {
+    fun serialize(): String {
+        return serializer().toString()
+    }
+}
 
 open class ChainableEvent(val id: Int, name: String): Event(name)
 

@@ -18,8 +18,10 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath 'com.android.tools.build:gradle:3.4.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-frontend-plugin:0.0.37"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -37,6 +39,15 @@ allprojects {
         google()
         jcenter()
         mavenLocal()
+        maven {
+            url "https://dl.bintray.com/kotlin/kotlin-eap"
+        }
+        maven {
+            url "https://dl.bintray.com/kotlin/kotlin-js-wrappers"
+        }
+        maven {
+            url "https://kotlin.bintray.com/kotlinx"
+        }
     }
 }
 

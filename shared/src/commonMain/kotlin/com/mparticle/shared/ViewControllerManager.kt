@@ -15,7 +15,6 @@ class ViewControllerManager {
     private val activeKits = HashMap<Int, Kit>()
     private val events = ArrayList<Event>()
 
-
     fun addEvent(item: Event) {
         if (events.contains(item)) {
             streamController.refreshItem(item)
@@ -28,6 +27,10 @@ class ViewControllerManager {
             streamController.addItem(item)
             categoryController.addItem(item)
         }
+    }
+
+    fun addEvents(itemsJson: String) {
+
     }
 
     companion object {

@@ -1,1 +1,4 @@
-include ':inspector', ':sample-simple', ':shared'
+include ':inspector',
+        ':web-export-client',
+        ':shared',
+        ':sample-simple'
