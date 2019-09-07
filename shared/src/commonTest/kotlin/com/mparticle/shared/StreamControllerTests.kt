@@ -1,7 +1,9 @@
 package com.mparticle.shared
 
 import com.mparticle.shared.controllers.StreamController
+import com.mparticle.shared.events.ApiCall
 import com.mparticle.shared.events.Event
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,6 +12,7 @@ import kotlin.test.assertTrue
 class StreamControllerTests {
     lateinit var controller: StreamController
     lateinit var manager: ViewControllerManager
+    val random = Random.Default
 
 
     @BeforeTest
@@ -20,24 +23,24 @@ class StreamControllerTests {
 
     @Test
     fun testEmpty() {
-        assertEquals(0, controller.eventCountLimit)
+        assertEquals(expected = 100, actual = controller.eventCountLimit)
     }
 
     @Test
     fun testOrder() {
         val events = ArrayList<Event>()
-        for (i in 0..200) {
-            val timestamp = PlatformApis().getTimestamp() - 100 * i
-            events.add(Event("event $i", timestamp))
+        for (i in 0..205) {
+            val timestamp = random.nextLong()
+            events.add(ApiCall("event $i", null, timestamp, iddd = 1234))
         }
         events.shuffle()
         events.forEach { manager.addEvent(it) }
 
-        assertEquals(controller.eventCountLimit, events.size)
+        assertEquals(controller.eventCountLimit, controller.getEvents().size)
 
-        controller.getItems()
+        controller.getEvents()
                 .foldRight(Long.MIN_VALUE) { event, acc ->
-                    assertTrue { event.createdTime > acc }
+                    assertTrue { event.createdTime <= acc }
                     event.createdTime
                 }
     }

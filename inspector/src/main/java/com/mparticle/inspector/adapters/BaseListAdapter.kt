@@ -46,16 +46,16 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
     init {
         controller?.apply {
             registerAddedListener { position, item ->
-                refreshData(events, position, 1, false)
+                refreshData(getEvents(), position, 1, false)
             }
             registerRefreshListener { position, item ->
-                refreshData(events, position)
+                refreshData(getEvents(), position)
             }
             registerRemovedListener { position, count ->
-                refreshData(events, position, count, true)
+                refreshData(getEvents(), position, count, true)
             }
             registerListUpdatedListener {
-                refreshData(events)
+                refreshData(getEvents())
             }
         }
     }
@@ -150,7 +150,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
     open fun bindTitleVH(viewHolder: TitleViewHolder, obj: CategoryTitle)  {
         viewHolder.apply {
-            title.text = obj.title
+            title.text = obj.name
             this.dropDown.isClickable = false
             count.apply {
                 visible(!obj.expanded || obj.count == 0)
@@ -213,14 +213,14 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
             status.setStatus(obj.status)
             arguments.removeAllViews()
-            obj.methodArguments?.forEach { argument ->
+            obj.objectArguments?.forEach { argument ->
                 val argumentView = inflater.inflate(R.layout.item_recyclerview_apicall_argument, expanded, false)
                 argumentView.findViewById<TextView>(R.id.type).apply {
                     text = "${argument.className}: "
                 }
                 argumentView.findViewById<JsonTextView>(R.id.value).apply {
-                    if (argument.value is JSONObject) {
-                        bindJson(argument.value as JSONObject)
+                    if (argument.value is Map<*,*>) {
+                        bindJson(JSONObject(argument.value as Map<*, *>))
                     } else {
                        setText(argument.value.toString())
                     }
@@ -428,7 +428,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
     protected fun bindStateStatus(viewHolder: StateStatusViewHolder?, obj: StateStatus) {
         viewHolder?.apply {
-            status.setStatus(obj.status())
+            status.setStatus(obj.status?.invoke())
 
             title.text = obj.name
             expanded.visible(obj.expanded)

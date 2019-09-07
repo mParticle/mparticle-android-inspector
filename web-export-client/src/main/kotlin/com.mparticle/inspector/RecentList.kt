@@ -36,6 +36,6 @@ class RecentListComponent : RComponent<LanguageListProps, RState>() {
 
 fun RBuilder.recentList(recentListController: StreamController, block: (Event) -> Unit) =
         child(RecentListComponent::class) {
-            attrs.data = recentListController.getItems()
+            attrs.data = recentListController.getEvents()
             attrs.block = block
         }

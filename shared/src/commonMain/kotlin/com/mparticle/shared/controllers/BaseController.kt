@@ -6,9 +6,7 @@ abstract class BaseController internal constructor() {
 
     //TODO after runnning Native, if we get "frozen" exceptions, we might need to change this
     //to a SharedLinkedList type, which has concurrency on Native
-    var events: List<Event> = ArrayList()
-        get() = ArrayList(field)
-        private set
+    private var events: List<Event> = ArrayList()
     private val refreshListeners: MutableList<((Int, Event) -> Unit)?> = ArrayList()
     private val addItemListeners: MutableList<((Int, Event) -> Unit)?> = ArrayList()
     private val removeListener: MutableList<((Int, Int) -> Unit)?> = ArrayList()
@@ -30,8 +28,8 @@ abstract class BaseController internal constructor() {
         listUpdatedListener.add(listener)
     }
 
-    fun getItems(): List<Event> {
-        return events
+    fun getEvents(): MutableList<Event> {
+        return ArrayList(events)
     }
 
     internal abstract fun addItem(item: Event)
@@ -43,7 +41,7 @@ abstract class BaseController internal constructor() {
         addItemListeners.forEach { it?.invoke(position, item) }
     }
 
-    protected fun onRefreshed(item: Event, position: Int? = getObjects().indexOf(item)) {
+    protected fun onRefreshed(item: Event, position: Int? = getEvents().indexOf(item)) {
         if (position != null) {
             refreshListeners.forEach { it?.invoke(position, item) }
         }
@@ -57,9 +55,5 @@ abstract class BaseController internal constructor() {
     protected fun onListUpdate(list: List<Event>) {
         events = list
         listUpdatedListener.forEach { it?.invoke(ArrayList(list)) }
-    }
-
-    protected fun getObjects(): MutableList<Event> {
-        return ArrayList(events)
     }
 }

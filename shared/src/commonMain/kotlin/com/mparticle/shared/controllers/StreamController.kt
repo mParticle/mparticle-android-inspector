@@ -18,21 +18,23 @@ class StreamController: BaseController() {
                 messages.put(obj as MessageEvent, Mutable(false))
             }
         }
-        var objectList = getObjects()
-        objectList
-                .indexOfFirst { obj.createdTime > it.createdTime }
-                .let {
-                    if (objectList.size > eventCountLimit) {
-                        onRemoved(objectList.subList(0, eventCountLimit - 1), eventCountLimit - 1, objectList.size - eventCountLimit)
-                    }
-                    if (it > 0) {
-                        objectList.add(it, obj)
-                        onAdded(objectList, it, obj)
-                    } else {
-                        objectList.add(0, obj)
-                        onAdded(objectList, 0, obj)
-                    }
+        var objects = getEvents()
+        if (objects.size > eventCountLimit) {
+            onRemoved(objects.subList(0, eventCountLimit - 1), eventCountLimit - 1, objects.size - eventCountLimit)
+        }
+
+        objects = getEvents()
+        objects
+            .indexOfFirst { obj.createdTime > it.createdTime }
+            .let {
+                if (it > 0) {
+                    objects.add(it - 1, obj)
+                    onAdded(objects, it - 1, obj)
+                } else {
+                    objects.add(0, obj)
+                    onAdded(objects, 0, obj)
                 }
+            }
     }
 
     override fun refreshItem(item: Event) {

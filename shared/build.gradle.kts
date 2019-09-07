@@ -28,7 +28,8 @@ kotlin {
         val main = it.maybeCreate("commonMain")
         val js = it.maybeCreate("jsMain")
         val jvm = it.maybeCreate("jvmMain")
-//        val ios = it.maybeCreate("iosMain")
+
+        val jvmTest = it.maybeCreate("jvmTest")
 
         val test = it.maybeCreate("commonTest")
         val androidTest = it.maybeCreate("androidTest")
@@ -53,7 +54,11 @@ kotlin {
 
         jvm.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.0")
+        }
 
+        jvmTest.dependencies {
+            implementation("org.jetbrains.kotlin:kotlin-test-junit:1.3.41" )
+            implementation("org.jetbrains.kotlin:kotlin-test:1.3.41")
         }
 
         androidTest.dependencies {

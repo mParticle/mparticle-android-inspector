@@ -58,6 +58,7 @@ dependencies {
     implementation 'com.github.tbouron.shakedetector:library:1.0.0@aar'
     implementation "com.mparticle:android-core:$mp_version"
 
+    testImplementation project(':shared')
     testImplementation 'junit:junit:4.12'
     testImplementation fileTree(dir: 'libs', include: ['testutils.aar'])
     testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
@@ -66,6 +67,7 @@ dependencies {
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.1.1'
 
 
+    androidTestImplementation project(':shared')
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }

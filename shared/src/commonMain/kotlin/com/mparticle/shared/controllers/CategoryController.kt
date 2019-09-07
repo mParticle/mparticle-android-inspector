@@ -3,7 +3,6 @@ package com.mparticle.shared.controllers
 import com.mparticle.shared.events.*
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.getDtoType
-import com.mparticle.shared.getShortName
 import com.mparticle.shared.putIfEmpty
 import com.mparticle.shared.utils.Mutable
 
@@ -74,11 +73,11 @@ class CategoryController(private val activeKitsCallback: (Int) -> Kit?): BaseCon
             }
             is CategoryTitle -> {
                 obj.onExpand = { onExpandCallback(it, obj) }
-                if (objectMap.get(EventViewType.valTitle)?.firstOrNull() { it is CategoryTitle && it.title == obj.title } == null) {
+                if (objectMap.get(EventViewType.valTitle)?.firstOrNull() { it is CategoryTitle && it.name == obj.name } == null) {
                     objectMap.get(EventViewType.valTitle)?.add(obj)
                 }
-                val objects = getObjects()
-                if (objects.firstOrNull { it is CategoryTitle && it.title == obj.title } == null) {
+                val objects = getEvents()
+                if (objects.firstOrNull { it is CategoryTitle && it.name == obj.name } == null) {
                     objects.add(obj)
                 }
                 onListUpdate(objects)
@@ -95,10 +94,10 @@ class CategoryController(private val activeKitsCallback: (Int) -> Kit?): BaseCon
             true -> objectMap[obj.getDtoType()]!!.add(obj) //if this crashes, you forgot to add a title ;)
         }
         val titleDto = objectMap.get(EventViewType.valTitle)?.first {
-            it is CategoryTitle && it.title == title
+            it is CategoryTitle && it.name == title
         }
         if ((titleDto as CategoryTitle).expanded) {
-            val objects = getObjects()
+            val objects = getEvents()
             var indexToAdd = objects.indexOf(titleDto) + 1
             val maxIndex = objects.subList(indexToAdd, objects.size)
                     .indexOfFirst { it is CategoryTitle }
@@ -165,7 +164,7 @@ class CategoryController(private val activeKitsCallback: (Int) -> Kit?): BaseCon
             }
         } else {
             var found = false
-            val objects = getObjects()
+            val objects = getEvents()
             objects.subList(objects.indexOf(obj) + 1, objects.size).let {
                 var count = 0
                 ArrayList<Any>(it).forEach {
@@ -179,7 +178,7 @@ class CategoryController(private val activeKitsCallback: (Int) -> Kit?): BaseCon
                     }
                 }
                 if (count > 0) {
-                    onRemoved(objects, getObjects().indexOf(obj) + 1, count)
+                    onRemoved(objects, getEvents().indexOf(obj) + 1, count)
                 }
             }
         }

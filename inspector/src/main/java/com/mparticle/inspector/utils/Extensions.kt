@@ -3,10 +3,11 @@ package com.mparticle.inspector.utils
 import android.view.View
 import android.widget.TextView
 import com.mparticle.identity.MParticleUser
+import com.mparticle.inspector.Constants
 import com.mparticle.inspector.Inspector
-import com.mparticle.inspector.UserWrapper
+import com.mparticle.internal.InternalSession
 import com.mparticle.shared.User
-import org.json.JSONArray
+import com.mparticle.shared.events.ObjectArgument
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.lang.reflect.Method
@@ -108,19 +109,23 @@ fun Any.isPrimitiveOrString(): Boolean {
     }
 }
 
+//this could be a primitive or Map<Sting, Any>, depending on whether it is primitive or an object.
 fun Any.printClass(): Any {
     val obj = this
     return when {
         this.isPrimitiveOrString() -> this
         else -> {
-            javaClass.fields.fold(JSONObject()) { acc, field ->
-                if (Modifier.isPublic(field.modifiers) &&
+            javaClass.declaredFields.fold(HashMap<String, Any?>()) { acc, field ->
+                if (!Modifier.isPrivate(field.modifiers) &&
                         !Modifier.isFinal(field.modifiers) &&
                         field.declaringClass.name.startsWith("com.mparticle")) {
-                    var value = field.get(obj)
-                    when (value?.javaClass?.isPrimitiveOrString()) {
-                        true -> acc.put(field.name, value)
-                        false -> value.printClass(field.name, acc)
+                    field.isAccessible = true
+                    if (field.isAccessible) {
+                        var value = field.get(obj)
+                        when (value?.javaClass?.isPrimitiveOrString()) {
+                            true -> acc.put(field.name, value)
+                            false -> value.printClass(field.name, acc)
+                        }
                     }
                 }
                 acc
@@ -148,37 +153,39 @@ fun Any.printClass(): Any {
     }
 }
 
-fun Any?.printClass(key: String, jsonObject: JSONObject): JSONObject {
+fun Any?.printClass(key: String, map: HashMap<String, Any?>): HashMap<String, Any?> {
     when (this) {
-        null -> jsonObject.put(key, JSONObject.NULL)
-        isPrimitiveOrString() -> jsonObject.put(key, this)
+        null -> map.put(key, null)
+        isPrimitiveOrString() -> map.put(key, this)
         is Map<*, *> -> {
             entries.sortedBy { it.key.toString() }
-                    .fold(JSONObject()) { acc, entry ->
+                    .fold(HashMap<String, Any?>()) { acc, entry ->
                         entry.value?.printClass(entry.key.toString(), acc) ?: acc
                     }
-                    .let { jsonObject.put(key, it) }
+                    .let { map.put(key, it) }
         }
         is List<*> -> {
             this.sortedBy { it.toString() }
-                    .fold(JSONArray()) { acc, t: Any? ->
-                        acc.apply { put(t?.printClass()) }
+                    .fold(ArrayList<Any?>()) { acc, t: Any? ->
+                        acc.apply { add(t?.printClass()) }
                     }
-                    .let { jsonObject.put(key, it) }
+                    .let { map.put(key, it) }
         }
-        is Enum<*> -> jsonObject.put(key, this.name)
+        is Enum<*> -> map.put(key, ObjectArgument(this::class.java.simpleName, this::class.java.name, this.name, isEnum = true))
         else ->
             if (this.javaClass.`package`?.name?.startsWith("com.mparticle") ?: false) {
-                jsonObject.put(key, printClass())
+                map.put(key, ObjectArgument(this::class.java.simpleName, this::class.java.name, printClass()))
             } else {
-                jsonObject.put(key, this.toString())
+                map.put(key, this.toString())
             }
     }
-    return jsonObject
+    return map
 }
 
+
+
 fun Method.isRelevant(): Boolean {
-    return java.lang.reflect.Modifier.isPublic(modifiers) &&
+    return !Modifier.isPrivate(modifiers) &&
             parameterTypes.size == 0 &&
             returnType != java.lang.Void.TYPE &&
             name.startsWith("get") &&
@@ -249,7 +256,14 @@ fun JSONObject.toMap(): Map<String, Any> {
 }
 
 fun MParticleUser.wrapper(): User {
-    return UserWrapper(this)
+    return User(id,
+            userAttributes,
+            userIdentities.entries.associate { it.key.name to it.value },
+            cart.printClass() as Map<String, Any?>,
+            consentState.printClass() as Map<String, Any?>,
+            isLoggedIn,
+            firstSeenTime,
+            lastSeenTime)
 }
 
 fun Map<*, *>.json(): JSONObject {
@@ -261,4 +275,30 @@ fun Map<*, *>.json(): JSONObject {
         }
     }
     return json
+}
+
+fun InternalSession.getMap(): Map<String, Any> {
+    return HashMap<String, Any>().apply {
+        put(Constants.SESSION_ID, mSessionID)
+
+        put("foreground time; ", {
+                (System.currentTimeMillis() - mSessionStartTime - backgroundTime).milliToSecondsString()
+            })
+        put("background time: ", { backgroundTime?.milliToSecondsString() ?: "-" })
+        put("event count: ", { mEventCount.toString() ?: "-" })
+        put("mpids: ", {
+            mpids?.run {
+                if (size == 0) {
+                    "-"
+                } else {
+                    joinToString { it.toString() }
+                }
+            } ?: "-"
+        })
+        put("length: ", {
+            run {
+                (mLastEventTime - mSessionStartTime).milliToSecondsString()
+            } ?: "-"
+        })
+    }
 }

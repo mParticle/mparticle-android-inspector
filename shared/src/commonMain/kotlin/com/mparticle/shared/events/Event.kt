@@ -3,18 +3,26 @@ package com.mparticle.shared.events
 
 import com.mparticle.shared.PlatformApis
 import com.mparticle.shared.utils.Mutable
+import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 
 @Serializable
-open class Event(val name: String, val createdTime: Long = PlatformApis().getTimestamp()) {
-    fun serialize(): String {
-        return serializer().toString()
-    }
+class EventCollection(val list: List<@Polymorphic Event>)
+
+//@Serializable
+abstract class Event() {
+    open val createdTime: Long = PlatformApis().getTimestamp()
+    abstract val name: String
 }
 
-open class ChainableEvent(val id: Int, name: String): Event(name)
+//@Serializable
+abstract class ChainableEvent(): Event() {
+    abstract val id: Int
+}
 
-data class Kit(val kitId: Int, val kitName: String, var status: Status, var expanded: Boolean = false, var apiCalls: MutableList<ApiCall> = ArrayList(), var errorMessage: String? = null): Event(kitName)
+@Serializable
+data class Kit(val kitId: Int, override val name: String, var status: Status, var expanded: Boolean = false, var apiCalls: MutableList<ApiCall> = ArrayList(), var errorMessage: String? = null): Event()
 
-class MessageTable(tableName: String, val messages: MutableMap<MessageEvent, Mutable<Boolean>> = HashMap(), var bodyExpanded: Boolean = false): Event(tableName)
+@Serializable
+class MessageTable(override val name: String, val messages: MutableMap<MessageEvent, Mutable<Boolean>> = HashMap(), var bodyExpanded: Boolean = false): Event()
 

@@ -3,9 +3,8 @@ package com.mparticle.inspector
 import com.mparticle.*
 import com.mparticle.identity.IdentityStateListener
 import com.mparticle.identity.MParticleUser
-import com.mparticle.inspector.Constants.Companion.SESSION_ID
+import com.mparticle.inspector.utils.getMap
 import com.mparticle.shared.events.*
-import com.mparticle.inspector.utils.milliToSecondsString
 import com.mparticle.inspector.utils.printClass
 import com.mparticle.inspector.utils.wrapper
 import com.mparticle.internal.InternalSession
@@ -61,7 +60,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
 
 
         val arguments = trackableObjects.map { argument ->
-            MethodArgument(argument.obj.javaClass.simpleName, argument.obj.printClass(), argument.trackingId)
+            ObjectArgument(argument.obj.javaClass.simpleName, argument.obj.javaClass.name, argument.obj.printClass(), argument.trackingId)
         }
         val status = when (used) {
             true -> Status.Green
@@ -69,7 +68,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         }
         activeKits.get(kitId)?.apply {
             val apiCallDto = KitApiCall(kitId, methodName, arguments, System.currentTimeMillis(), status = status, id = id)
-            apiCallDto.methodArguments?.forEach { argument ->
+            apiCallDto.objectArguments?.forEach { argument ->
                 argument.id?.let { id ->
                     chainableEventDtos[id] = apiCallDto
                 }
@@ -86,9 +85,9 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         if (isExternal || objectOfInterest) {
             toTrackableObjects(id, objectList)
                     .map { argument ->
-                        MethodArgument(argument.obj.javaClass.simpleName, argument.obj.printClass(), argument.trackingId).copy()
+                        ObjectArgument(argument.obj.javaClass.simpleName, argument.obj.javaClass.name, argument.obj.printClass(), argument.trackingId).copy()
                     }.also { arguments ->
-                        ApiCall(methodName, arguments, System.currentTimeMillis(), id = id)
+                        ApiCall(methodName, arguments, System.currentTimeMillis(),id = id)
                                 .let { dto ->
                                     arguments.forEach { argument ->
                                         argument.id?.let { id ->
@@ -273,34 +272,9 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
 
     private fun createSessionStatus(internalSession: InternalSession?): StateStatus {
         val sessionStatus = StateStatus("Session", 4, { if (internalSession?.isActive == true) Status.Green else Status.Red }, obj = internalSession)
-
-        HashMap<String, Any>().apply {
-            val session = { sessionStatus.obj as InternalSession? }
-            put(SESSION_ID, { session()?.mSessionID })
-
-            put("foreground time; ", {
-                session()?.let {
-                    (System.currentTimeMillis() - it.mSessionStartTime - it.backgroundTime).milliToSecondsString()
-                } ?: "-"
-            })
-            put("background time: ", { session()?.backgroundTime?.milliToSecondsString() ?: "-" })
-            put("event count: ", { session()?.mEventCount.toString() ?: "-" })
-            put("mpids: ", {
-                session()?.mpids?.run {
-                    if (size == 0) {
-                        "-"
-                    } else {
-                        joinToString { it.toString() }
-                    }
-                } ?: "-"
-            })
-            put("length: ", {
-                session()?.run {
-                    (mLastEventTime - mSessionStartTime).milliToSecondsString()
-                } ?: "-"
-            })
-        }.also {
-            sessionStatus.fields = it
+        (sessionStatus.obj as? InternalSession)?.run {
+            val sessionMap = getMap()
+            sessionStatus.fields = sessionMap
             sessionStatus.status = { if ((sessionStatus.obj as InternalSession?)?.isActive == true) Status.Green else Status.Red }
         }
         return sessionStatus

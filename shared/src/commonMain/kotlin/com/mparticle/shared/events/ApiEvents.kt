@@ -1,18 +1,35 @@
 package com.mparticle.shared.events
 
-import com.mparticle.shared.events.Status
+import kotlinx.serialization.Polymorphic
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-open class ApiCall(endpoint: String, var methodArguments: List<MethodArgument>?, var timeSent: Long, var expanded: Boolean = false, id: Int, var status: Status? = null): ChainableEvent(id, endpoint) {
+@Serializable
+open class ApiCall(var endpoint: String, var objectArguments: List<ObjectArgument>?, var timeSent: Long, var expanded: Boolean = false, override var id: Int, open var status: Status? = null): ChainableEvent() {
+    override val name: String = endpoint
+
     open fun copy(): ApiCall {
-        return ApiCall(this.name, methodArguments, timeSent, expanded, id, status)
+        return ApiCall(this.name, objectArguments, timeSent, expanded, id, status)
     }
 }
 
-class KitApiCall(val kitId: Int, endpoint: String, methodArguments: List<MethodArgument>?, timeSent: Long, expanded: Boolean = false, id: Int, status: Status): ApiCall(endpoint, methodArguments, timeSent, expanded, id, status) {
+@Serializable
+class KitApiCall(val kitId: Int, var endpointName: String, var kitObjectArguments: List<ObjectArgument>?, var kitTimeSent: Long, var kitExpanded: Boolean = false, @SerialName("kit_id")override var id: Int, @SerialName("kit_status") override var status: Status?): ApiCall(endpointName, kitObjectArguments, kitTimeSent, kitExpanded, id, status) {
     override fun copy(): KitApiCall {
-        return KitApiCall(kitId, name, methodArguments, timeSent, expanded, id, status
+        return KitApiCall(kitId, name, objectArguments, timeSent, expanded, id, status
                 ?: Status.Red)
     }
 }
 
-data class MethodArgument(val className: String, val value: Any, val id: Int? = null)
+@Serializable
+data class ObjectArgument(val className: String, val fullClassName: String, @Polymorphic val value: Any, val id: Int? = null, val isEnum: Boolean = false)
+//
+//class Value(val fieldName: String, val accessLevel: Int, val isPrimitive: Boolean, val primitiveValue: Any, val ObjectValue: List<ObjectArgument>) {
+//
+//    companion object {
+//        const val PRIVATE = 0
+//        const val PACKAGE_PRIVATE = 1
+//        const val PROTECTED = 2
+//        const val PUBLIC = 3
+//    }
+//}

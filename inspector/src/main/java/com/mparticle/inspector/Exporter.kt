@@ -1,24 +1,43 @@
 package com.mparticle.inspector
 
 import android.content.Intent
-import android.util.JsonWriter
+import com.mparticle.inspector.utils.getMap
+import com.mparticle.internal.InternalSession
+import com.mparticle.shared.Serializer
 import com.mparticle.shared.events.Event
-import org.json.JSONArray
+import com.mparticle.shared.events.StateStatus
 
 class Exporter(events: List<Event>) {
 
     var contents: String = ""
 
     init {
-        events.sortedBy { it.createdTime }
-                .map { it.serialize() }
-                .fold(JSONArray()) { acc, s ->
-                    acc.put(s)
+        events.map {
+            if (it is StateStatus) {
+                it.fields = it.fields.entries.associate {
+                    if (it.value is Function0<*>) {
+                        it.key to (it.value as Function0<*>).invoke().toString()
+                    } else {
+                        it.key to it.value
+                    }
+                }.let { HashMap(it) }
+                if (it.obj is InternalSession) {
+                    it.fields = (it.obj as InternalSession).getMap().entries.associate {
+                        if (it.value is Function0<*>) {
+                            it.key to (it.value as Function0<*>).invoke().toString()
+                        } else {
+                            it.key to it.value
+                        }
+                    }
                 }
-                .also {
-                    contents = it.toString(4)
-                }
+            }
+        }
+        contents = Serializer().serialize(events)
 
+        val deserialized = Serializer().deserialize(contents)
+        if (events.size != deserialized.size) {
+            throw RuntimeException("serialization failed");
+        }
     }
 
     fun email(emailAddress: String) {
@@ -29,9 +48,5 @@ class Exporter(events: List<Event>) {
         emailIntent.putExtra(Intent.EXTRA_TEXT, contents)
         Inspector.getInstance()?.currentActivity?.get()?.startActivity(Intent.createChooser(emailIntent, "Pick an Email provider"))
     }
-
-//    fun Event.serialize(): String {
-//        return printClass(this.javaClass.name, JSONObject()).toString(4)
-//    }
 
 }

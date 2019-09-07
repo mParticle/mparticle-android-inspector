@@ -134,7 +134,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListe
 
         showProgress(true)
         val apiRequest = IdentityApiRequest
-                .withEmptyUser()
+                .withUser(MParticle.getInstance()?.Identity()?.currentUser)
                 .email(if (TextUtils.isEmpty(email)) null else email)
                 .customerId(if (TextUtils.isEmpty(customerId)) null else customerId)
                 .userIdentity(MParticle.IdentityType.Other, if (TextUtils.isEmpty(otherId)) null else otherId)

@@ -122,7 +122,7 @@ class ChainListAdapter(context: Context, dataManager: DataManager, displayCallba
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ChainTitleViewHolder) {
             val obj = getObjects()[position] as ChainTitle
-            holder.title.text = obj.title
+            holder.title.text = obj.name
         } else {
             super.onBindViewHolder(holder, position)
         }
@@ -176,7 +176,7 @@ class ChainListAdapter(context: Context, dataManager: DataManager, displayCallba
         }
     }
 
-    class Next: Event("next")
+    class Next(override val name: String = "next"): Event()
     inner class NextViewHolder(imageView: View): RecyclerView.ViewHolder(imageView)
 }
 
@@ -192,10 +192,10 @@ fun Event.copy(): Event {
         is StateCurrentUser -> StateCurrentUser(user)
         is StateStatus -> StateStatus(name, priority, status, fields)
         is StateEvent -> StateEvent(name, priority)
-        is CategoryTitle -> CategoryTitle(title, itemType, false, order)
+        is CategoryTitle -> CategoryTitle(name, itemType, false, order)
         is ChainListAdapter.Next -> ChainListAdapter.Next()
-        is ChainableEvent -> ChainableEvent(id, name)
+//        is ChainableEvent -> ChainableEvent(id, name)
         is ChainTitle -> ChainTitle(name)
-        else -> Event(name)
+        else -> throw RuntimeException("event not implemented")
     }
 }
