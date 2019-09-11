@@ -20,7 +20,7 @@ open class ApiCall(var endpoint: String,
     }
 
     fun getMethodName(): String {
-        return endpoint.split(".")[0].replace("()", "")
+        return endpoint.split(".")[1].replace("()", "")
     }
 
     fun getClassName(): String {
@@ -63,6 +63,7 @@ data class ObjectArgument(val fullClassName: String,
 
 sealed class ObjectValue
 
+@Serializable
 class NullObject: ObjectValue()
 
 @Serializable

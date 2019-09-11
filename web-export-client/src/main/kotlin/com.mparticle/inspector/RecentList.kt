@@ -20,6 +20,7 @@ class RecentListComponent : RComponent<LanguageListProps, RState>() {
             props.data.forEach { item ->
                 li("mdc-list-item") {
                     span("mdc-list-item__text") {
+                        Event.toListItem()
                         span("mdc-list-item__primary-text") { +item.name }
                         span("mdc-list-item__secondary-text") { +item.createdTime }
                     }
@@ -31,6 +32,10 @@ class RecentListComponent : RComponent<LanguageListProps, RState>() {
                 }
             }
         }
+    }
+
+    fun Event.toListItem() {
+
     }
 }
 

@@ -8,7 +8,9 @@ import com.mparticle.identity.IdentityApi
 import com.mparticle.identity.IdentityStateListener
 import com.mparticle.identity.MParticleUser
 import com.mparticle.inspector.BaseAbstractTest
+import com.mparticle.inspector.Exporter
 import com.mparticle.inspector.Importer
+import com.mparticle.inspector.Inspector
 import com.mparticle.inspector.test.R
 import com.mparticle.internal.Logger
 import com.mparticle.shared.Serializer
@@ -37,6 +39,11 @@ class TestInvokeFromSerial: BaseAbstractTest() {
         val apiEvents = events.filter { it is ApiCall && !(it is KitApiCall) } as List<ApiCall>
 
         importer.executeApiEvents(apiEvents)
+
+        Thread.sleep(5000)
+
+        val recordedEvents = Inspector.getInstance()?.viewControllerManager?.allEvents
+        val serializedEvents = Exporter(recordedEvents ?: listOf()).contents
     }
 
 }

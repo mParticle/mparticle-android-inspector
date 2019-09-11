@@ -36,6 +36,7 @@ class Serializer {
             Obj::class with Obj.serializer()
             MapObject::class with MapObject.serializer()
             CollectionObject::class with CollectionObject.serializer()
+            NullObject::class with NullObject.serializer()
         }
     }
 

@@ -72,7 +72,12 @@ class Importer(val context: Context) {
     fun ObjectArgument.toObject(): Any? {
         val v = value
         return when (v) {
-            is Primitive -> v.value
+            is Primitive ->
+                if (v.value is String && fullClassName != String::class.java.name) {
+                    TestClass()
+                } else {
+                    v.value
+                }
             is EnumObject -> v.toEnum(fullClassName)
             is Obj -> v.toObject(fullClassName)
             is CollectionObject -> v.values.map { it.toObject() }

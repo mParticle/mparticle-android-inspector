@@ -1,4 +1,4 @@
 include ':inspector',
-        ':web-export-client',
+//        ':web-export-client',
         ':shared',
         ':sample-simple'

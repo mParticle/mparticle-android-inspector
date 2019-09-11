@@ -46,7 +46,7 @@ class Exporter(events: List<Event>) {
         emailIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf(emailAddress))
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Inspector Log: ${Inspector.getInstance()?.application?.packageName}")
         emailIntent.putExtra(Intent.EXTRA_TEXT, contents)
-        Inspector.getInstance()?.currentActivity?.get()?.startActivity(Intent.createChooser(emailIntent, "Pick an Email provider"))
+//        Inspector.getInstance()?.currentActivity?.get()?.startActivity(Intent.createChooser(emailIntent, "Pick an Email provider"))
     }
 
 }

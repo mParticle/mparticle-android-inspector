@@ -88,7 +88,7 @@ fun Any?.toObjectArgument(id: Int? = null): ObjectArgument {
     val obj = this
     return when {
         this == null -> ObjectArgument("null", NullObject(), id)
-        this?.isPrimitiveOrString() == true -> ObjectArgument(this::class.java.name, toPrimitive(), id)
+        this.isPrimitiveOrString() == true -> ObjectArgument(this::class.java.name, toPrimitive(), id)
         this is Enum<*> -> ObjectArgument(this::class.java.name, EnumObject(name), id)
         this is List<*> -> ObjectArgument(this::class.java.name, toCollectionObject(), id)
         this is Map<*, *> -> ObjectArgument(this::class.java.name, toMapObject(), id)
@@ -138,7 +138,7 @@ fun Any.toObj(): Obj {
     val obj = this
     val fields = ArrayList<FieldObject>()
     javaClass.declaredFields
-            .filter { !(Modifier.isFinal(it.modifiers)) && it.declaringClass.name.startsWith("com.mparticle") }
+            .filter { !(Modifier.isFinal(it.modifiers)) && it.declaringClass.name.startsWith("com.mparticle") && !it.type.name.startsWith("org.aspectj") }
             .map { field ->
                 field.isAccessible = true
                 if (field.isAccessible) {
