@@ -5,14 +5,9 @@ import android.support.v7.widget.RecyclerView
 import com.mparticle.inspector.*
 import com.mparticle.shared.events.*
 import com.mparticle.inspector.viewholders.*
-import com.mparticle.shared.utils.Mutable
-import com.mparticle.inspector.utils.visible
-import com.mparticle.shared.EventViewType
-import com.mparticle.shared.ViewControllerManager
+import com.mparticle.inspector.extensions.visible
 import com.mparticle.shared.controllers.BaseController
-import com.mparticle.shared.getDtoType
 import com.mparticle.shared.getShortName
-import java.util.*
 
 class RecentListAdapter(context: Context, dataManager: DataManager, controller: BaseController, displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback, dataManager, controller) {
 

@@ -1,7 +1,7 @@
 package com.mparticle.inspector
 
 import android.content.Intent
-import com.mparticle.inspector.utils.getMap
+import com.mparticle.inspector.extensions.getMap
 import com.mparticle.internal.InternalSession
 import com.mparticle.shared.Serializer
 import com.mparticle.shared.events.Event

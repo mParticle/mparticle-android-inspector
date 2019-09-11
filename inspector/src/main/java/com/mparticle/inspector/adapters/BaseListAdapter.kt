@@ -12,12 +12,11 @@ import com.mparticle.inspector.Constants.Companion.SESSION_ID
 import com.mparticle.inspector.DataManager
 import com.mparticle.inspector.R
 import com.mparticle.inspector.customviews.JsonTextView
-import com.mparticle.inspector.utils.*
+import com.mparticle.inspector.extensions.*
 import com.mparticle.shared.events.*
 import com.mparticle.inspector.viewholders.*
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.EventViewType.*
-import com.mparticle.shared.ViewControllerManager
 import com.mparticle.shared.controllers.BaseController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -210,7 +209,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
 
             status.setStatus(obj.status)
             arguments.removeAllViews()
-            obj.objectArguments?.forEach { argument ->
+            obj.arguments.forEach { argument ->
                 val argumentView = inflater.inflate(R.layout.item_recyclerview_apicall_argument, expanded, false)
                 argumentView.findViewById<TextView>(R.id.type).apply {
                     text = "${argument.className}: "
@@ -220,7 +219,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                     if (argMap is Map<*,*>) {
                         bindJson(JSONObject(argMap as Map<*, *>))
                     } else {
-                       setText(argMap.toString())
+                        setText(argMap.toString())
                     }
                 }
                 onHasConnections(argument.id) { async ->

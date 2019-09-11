@@ -9,7 +9,7 @@ import android.widget.FrameLayout
 import com.mparticle.inspector.R
 
 import com.mparticle.shared.events.Status.*
-import com.mparticle.inspector.utils.visible
+import com.mparticle.inspector.extensions.visible
 import com.mparticle.shared.events.Status
 
 class StatusView(context: Context, attributeSet: AttributeSet) : FrameLayout(context, attributeSet) {

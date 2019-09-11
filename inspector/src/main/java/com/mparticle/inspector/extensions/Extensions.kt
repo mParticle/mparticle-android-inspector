@@ -1,4 +1,4 @@
-package com.mparticle.inspector.utils
+package com.mparticle.inspector.extensions
 
 import android.view.View
 import android.widget.TextView
@@ -67,32 +67,6 @@ fun String.apiMapName(threadName: String?): String {
     return this + "_" + (threadName ?: "none")
 }
 
-fun <T> Array<T>.getFirstLastOf(startingAt: Int = 0, test: (T) -> Boolean): Int {
-    var apiCallIndex = 0
-    var found = false
-    for (element in this) {
-        if (apiCallIndex >= startingAt) {
-            val inClass = test(element)
-            if (found && !inClass) {
-                break
-            }
-            found = inClass
-        }
-        apiCallIndex++
-    }
-    return apiCallIndex - 1
-}
-
-fun <T> Array<T>.indexOfFirst(startingAt: Int, test: (T) -> Boolean): Int {
-    forEachIndexed{ index: Int, t: T ->
-        if (index >= startingAt) {
-            if (test(t)) {
-                return index
-            }
-        }
-    }
-    return -1
-}
 
 fun Any.isPrimitiveOrString(): Boolean {
     return when (this) {
@@ -105,20 +79,20 @@ fun Any.isPrimitiveOrString(): Boolean {
         is Char,
         is Boolean,
         is String,
-        javaClass.isPrimitive -> true
+        this?.javaClass?.isPrimitive -> true
         else -> false
     }
 }
 
-//this could be a primitive or Map<Sting, Any>, depending on whether it is primitive or an object.
-fun Any.toObjectArgument(id: Int? = null): ObjectArgument {
+fun Any?.toObjectArgument(id: Int? = null): ObjectArgument {
     val obj = this
     return when {
-        this.isPrimitiveOrString() -> ObjectArgument(this::class.java.name, obj.toPrimitive())
-        this is Enum<*> -> ObjectArgument(this::class.java.name, EnumObject(name))
-        this is List<*> -> ObjectArgument(this::class.java.name, toCollectionObject())
-        this is Map<*, *> -> ObjectArgument(this::class.java.name, toMapObject())
-        else -> ObjectArgument(this::class.java.name, obj.toObj())
+        this == null -> ObjectArgument("null", NullObject(), id)
+        this?.isPrimitiveOrString() == true -> ObjectArgument(this::class.java.name, toPrimitive(), id)
+        this is Enum<*> -> ObjectArgument(this::class.java.name, EnumObject(name), id)
+        this is List<*> -> ObjectArgument(this::class.java.name, toCollectionObject(), id)
+        this is Map<*, *> -> ObjectArgument(this::class.java.name, toMapObject(), id)
+        else -> ObjectArgument(this::class.java.name, toObj(), id)
     }
 }
 
@@ -131,7 +105,7 @@ fun Field.toField(value: Any?): FieldObject {
         Modifier.isPublic(modifiers) -> FieldObject.PUBLIC
         else -> FieldObject.PACKAGE_PRIVATE
     }
-    return FieldObject(accessLevel, name, value?.toObjectArgument(), false)
+    return FieldObject(accessLevel, name, value.toObjectArgument(), false)
 }
 
 fun Method.toField(result: Any?): FieldObject {
@@ -141,12 +115,12 @@ fun Method.toField(result: Any?): FieldObject {
         Modifier.isPublic(modifiers) -> FieldObject.PUBLIC
         else -> FieldObject.PACKAGE_PRIVATE
     }
-    return FieldObject(accessLevel, name, result?.toObjectArgument(), true)
+    return FieldObject(accessLevel, name, result.toObjectArgument(), true)
 }
 
 fun List<*>.toCollectionObject(): CollectionObject {
     return map {
-       it?.toObjectArgument()
+       it.toObjectArgument()
     }.let {
         CollectionObject(it)
     }
@@ -154,7 +128,7 @@ fun List<*>.toCollectionObject(): CollectionObject {
 
 fun Map<*, *>.toMapObject(): MapObject {
     return entries.associate { (key, value) ->
-        key?.toObjectArgument() to value?.toObjectArgument()
+        key.toObjectArgument() to value.toObjectArgument()
     }.let {
         MapObject(it)
     }
@@ -207,10 +181,10 @@ fun Method.isRelevant(): Boolean {
  *
  * @param cleanMethodsOnly should getter names be normalied, i.e "getId" -> "id" when true
  */
-fun ObjectArgument.toMapOrValue(cleanMethodsOnly: Boolean = true): Any {
+fun ObjectArgument.toMapOrValue(cleanMethodsOnly: Boolean = true): Any? {
     return when (value) {
         is Primitive -> (value as Primitive).value
-        is com.mparticle.shared.events.EnumObject -> (value as com.mparticle.shared.events.EnumObject).name
+        is EnumObject -> (value as EnumObject).name
         is Obj -> {
             val obj = value as Obj
             val objectMap = HashMap<String, Any?>()
@@ -236,6 +210,7 @@ fun ObjectArgument.toMapOrValue(cleanMethodsOnly: Boolean = true): Any {
         is MapObject -> (value as MapObject).valuesMap.entries.associate { (key, value) ->
             key?.toMapOrValue() to value?.toMapOrValue()
         }
+        is NullObject -> null
     }
 }
 

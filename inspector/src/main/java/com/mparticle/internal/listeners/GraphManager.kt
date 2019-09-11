@@ -5,6 +5,10 @@ import android.os.Message
 import com.mparticle.MPEvent
 import com.mparticle.SdkListener
 import com.mparticle.inspector.DataManager
+import com.mparticle.inspector.extensions.apiMapName
+import com.mparticle.inspector.extensions.broadcast
+import com.mparticle.inspector.extensions.getApiName
+import com.mparticle.inspector.extensions.isExternalApiInvocation
 import com.mparticle.shared.events.ChainableEvent
 import com.mparticle.shared.events.Event
 import com.mparticle.inspector.utils.*
@@ -245,14 +249,11 @@ abstract class GraphManager: SdkListener(), GraphListener, DataManager {
         }
     }
 
-    protected fun toTrackableObjects(parentId: Int, objects: List<Any?>): List<TrackableObject> {
-        return objects.filterNotNull()
-                .map { obj ->
-                    val id = registerObject(obj)
-                    compositeObjectIds(parentId, id)
-                    compositeObjectIds(id, parentId)
-                    TrackableObject(obj, id)
-                }
+    protected fun track(parentId: Int, obj: Any): Int {
+        val id = registerObject(obj)
+        compositeObjectIds(parentId, id)
+        compositeObjectIds(id, parentId)
+        return id
     }
 
 

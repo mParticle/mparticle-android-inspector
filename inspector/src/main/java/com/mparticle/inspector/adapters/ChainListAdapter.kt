@@ -9,9 +9,8 @@ import com.mparticle.shared.events.Status
 import com.mparticle.shared.events.*
 import com.mparticle.inspector.viewholders.*
 import com.mparticle.shared.utils.Mutable
-import com.mparticle.inspector.utils.visible
+import com.mparticle.inspector.extensions.visible
 import com.mparticle.shared.EventViewType
-import com.mparticle.shared.ViewControllerManager
 import com.mparticle.shared.getDtoType
 import com.mparticle.shared.getShortName
 

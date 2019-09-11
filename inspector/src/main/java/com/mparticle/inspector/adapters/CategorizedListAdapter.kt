@@ -3,13 +3,11 @@ package com.mparticle.inspector.adapters
 import android.content.Context
 import android.support.v7.widget.RecyclerView
 import com.mparticle.inspector.DataManager
-import com.mparticle.inspector.utils.visible
+import com.mparticle.inspector.extensions.visible
 import com.mparticle.inspector.viewholders.ItemViewHolder
 import com.mparticle.inspector.viewholders.TitleViewHolder
-import com.mparticle.shared.ViewControllerManager
 import com.mparticle.shared.controllers.BaseController
 import com.mparticle.shared.events.CategoryTitle
-import com.mparticle.shared.events.Event
 
 class CategorizedListAdapter(context: Context, dataManager: DataManager, controller: BaseController, displayCallback: (Int) -> Unit, startTime: Long): BaseListAdapter(context, startTime, displayCallback, dataManager, controller) {
 

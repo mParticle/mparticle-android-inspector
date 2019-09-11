@@ -1,12 +1,13 @@
 package com.mparticle.inspector
 
 import com.mparticle.*
+import com.mparticle.commerce.Cart
 import com.mparticle.identity.IdentityStateListener
 import com.mparticle.identity.MParticleUser
-import com.mparticle.inspector.utils.getMap
+import com.mparticle.inspector.extensions.getMap
 import com.mparticle.shared.events.*
-import com.mparticle.inspector.utils.toObjectArgument
-import com.mparticle.inspector.utils.wrapper
+import com.mparticle.inspector.extensions.toObjectArgument
+import com.mparticle.inspector.extensions.wrapper
 import com.mparticle.internal.InternalSession
 import com.mparticle.internal.listeners.GraphManager
 import com.mparticle.shared.events.Status
@@ -53,22 +54,19 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
     override fun onKitApiCalled(kitId: Int, apiName: String, callingApiName: String?, kitManagerApiName: String?, objectList: List<Any?>, used: Boolean) {
         val id = nextId()
         super.onKitApiCalled(id, callingApiName, kitManagerApiName)
-        val trackableObjects = toTrackableObjects(id, objectList)
         var methodName = apiName
         val split = methodName.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         methodName = split[split.size - 1]
 
 
-        val arguments = trackableObjects.map { argument ->
-            argument.obj.toObjectArgument(argument.trackingId)
-        }
+        val arguments = objectList.map { it.toObjectArgument(id) }
         val status = when (used) {
             true -> Status.Green
             false -> Status.Red
         }
         activeKits.get(kitId)?.apply {
             val apiCallDto = KitApiCall(kitId, methodName, arguments, System.currentTimeMillis(), status = status, id = id)
-            apiCallDto.objectArguments?.forEach { argument ->
+            apiCallDto.arguments.forEach { argument ->
                 argument.id?.let { id ->
                     chainableEventDtos[id] = apiCallDto
                 }
@@ -77,30 +75,31 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         }
     }
 
-    override fun onApiCalled(methodName: String, objectList: List<Any>, isExternal: Boolean) {
+    override fun onApiCalled(methodName: String, obj: Any?, objectList: List<Any>, isExternal: Boolean) {
         tryAddIdentityListener(methodName)
         val id = nextId()
         super.onApiCalled(id, methodName)
         val objectOfInterest = objectList.any { objectIds.containsKey(it) }
         if (isExternal || objectOfInterest) {
-            toTrackableObjects(id, objectList)
-                    .map { argument ->
-                        argument.obj.toObjectArgument(argument.trackingId)
-                    }.also { arguments ->
-                        ApiCall(methodName, arguments, System.currentTimeMillis(),id = id)
-                                .let { dto ->
-                                    arguments.forEach { argument ->
-                                        argument.id?.let { id ->
-                                            chainableEventDtos[id] = dto
-                                        }
-                                    }
-                                    if (isExternal) {
-                                        addItem(dto)
-                                    } else {
-                                        chainableEventDtos[id] = dto
-                                    }
-                                }
-                    }
+            val arguments = objectList.map { obj ->
+                val trackingId = track(id, obj)
+                obj.toObjectArgument()
+            }
+            var objArg = when (obj) {
+                is Cart, is MParticle -> obj.toObjectArgument()
+                else -> null
+            }
+            val dto = ApiCall(methodName, arguments, System.currentTimeMillis(), objArg, id = id)
+            arguments.forEach { argument ->
+                argument.id?.let { id ->
+                    chainableEventDtos[id] = dto
+                }
+            }
+            if (isExternal) {
+                addItem(dto)
+            } else {
+                chainableEventDtos[id] = dto
+            }
         }
     }
 

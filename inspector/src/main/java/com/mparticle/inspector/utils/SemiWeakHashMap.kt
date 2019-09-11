@@ -1,5 +1,6 @@
 package com.mparticle.inspector.utils
 
+import com.mparticle.inspector.extensions.isPrimitiveOrString
 import java.util.*
 
 class SemiWeakHashMap<Any, T>: MutableMap<Any, T> {

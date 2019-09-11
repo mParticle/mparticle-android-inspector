@@ -31,7 +31,7 @@ class StreamControllerTests {
         val events = ArrayList<Event>()
         for (i in 0..205) {
             val timestamp = random.nextLong()
-            events.add(ApiCall("event $i", null, timestamp, iddd = 1234))
+            events.add(ApiCall("event $i", listOf(), timestamp, iddd = 1234))
         }
         events.shuffle()
         events.forEach { manager.addEvent(it) }
