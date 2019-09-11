@@ -86,7 +86,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
                 obj.toObjectArgument()
             }
             var objArg = when (obj) {
-                is Cart, is MParticle -> obj.toObjectArgument()
+                is Cart, is MParticleUser -> obj.toObjectArgument()
                 else -> null
             }
             val dto = ApiCall(methodName, arguments, System.currentTimeMillis(), objArg, id = id)
