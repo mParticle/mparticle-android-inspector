@@ -7,9 +7,10 @@ import com.mparticle.inspector.Constants
 import com.mparticle.inspector.Inspector
 import com.mparticle.internal.InternalSession
 import com.mparticle.shared.User
-import com.mparticle.shared.events.ObjectArgument
+import com.mparticle.shared.events.*
 import org.json.JSONObject
 import java.lang.ref.WeakReference
+import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
@@ -110,79 +111,86 @@ fun Any.isPrimitiveOrString(): Boolean {
 }
 
 //this could be a primitive or Map<Sting, Any>, depending on whether it is primitive or an object.
-fun Any.printClass(): Any {
+fun Any.toObjectArgument(id: Int? = null): ObjectArgument {
     val obj = this
     return when {
-        this.isPrimitiveOrString() -> this
-        else -> {
-            javaClass.declaredFields.fold(HashMap<String, Any?>()) { acc, field ->
-                if (!Modifier.isPrivate(field.modifiers) &&
-                        !Modifier.isFinal(field.modifiers) &&
-                        field.declaringClass.name.startsWith("com.mparticle")) {
-                    field.isAccessible = true
-                    if (field.isAccessible) {
-                        var value = field.get(obj)
-                        when (value?.javaClass?.isPrimitiveOrString()) {
-                            true -> acc.put(field.name, value)
-                            false -> value.printClass(field.name, acc)
-                        }
-                    }
-                }
-                acc
-            }.let {
-                javaClass.methods.fold(it) { acc, method ->
-                    if (method.isRelevant()) {
-                        val value = method.invoke(obj)
-
-                        val methodName = method.name.run {
-                            val name = replace("get", "")
-                            "${name.substring(0, 1).toLowerCase()}${name.substring(1)}" +
-                                    ""
-                        }
-                        when (value?.isPrimitiveOrString()) {
-                            true -> acc.apply { put(methodName, value) }
-                            false -> value.printClass(methodName, acc)
-                            null -> acc
-                        }
-                    } else {
-                        acc
-                    }
-                }
-            }
-        }
+        this.isPrimitiveOrString() -> ObjectArgument(this::class.java.name, obj.toPrimitive())
+        this is Enum<*> -> ObjectArgument(this::class.java.name, EnumObject(name))
+        this is List<*> -> ObjectArgument(this::class.java.name, toCollectionObject())
+        this is Map<*, *> -> ObjectArgument(this::class.java.name, toMapObject())
+        else -> ObjectArgument(this::class.java.name, obj.toObj())
     }
 }
 
-fun Any?.printClass(key: String, map: HashMap<String, Any?>): HashMap<String, Any?> {
-    when (this) {
-        null -> map.put(key, null)
-        isPrimitiveOrString() -> map.put(key, this)
-        is Map<*, *> -> {
-            entries.sortedBy { it.key.toString() }
-                    .fold(HashMap<String, Any?>()) { acc, entry ->
-                        entry.value?.printClass(entry.key.toString(), acc) ?: acc
-                    }
-                    .let { map.put(key, it) }
-        }
-        is List<*> -> {
-            this.sortedBy { it.toString() }
-                    .fold(ArrayList<Any?>()) { acc, t: Any? ->
-                        acc.apply { add(t?.printClass()) }
-                    }
-                    .let { map.put(key, it) }
-        }
-        is Enum<*> -> map.put(key, ObjectArgument(this::class.java.simpleName, this::class.java.name, this.name, isEnum = true))
-        else ->
-            if (this.javaClass.`package`?.name?.startsWith("com.mparticle") ?: false) {
-                map.put(key, ObjectArgument(this::class.java.simpleName, this::class.java.name, printClass()))
-            } else {
-                map.put(key, this.toString())
-            }
+fun Any.toPrimitive() = Primitive(this)
+
+fun Field.toField(value: Any?): FieldObject {
+    val accessLevel = when {
+        Modifier.isPrivate(modifiers) -> FieldObject.PRIVATE
+        Modifier.isProtected(modifiers) -> FieldObject.PROTECTED
+        Modifier.isPublic(modifiers) -> FieldObject.PUBLIC
+        else -> FieldObject.PACKAGE_PRIVATE
     }
-    return map
+    return FieldObject(accessLevel, name, value?.toObjectArgument(), false)
 }
 
+fun Method.toField(result: Any?): FieldObject {
+    val accessLevel = when {
+        Modifier.isPrivate(modifiers) -> FieldObject.PRIVATE
+        Modifier.isProtected(modifiers) -> FieldObject.PROTECTED
+        Modifier.isPublic(modifiers) -> FieldObject.PUBLIC
+        else -> FieldObject.PACKAGE_PRIVATE
+    }
+    return FieldObject(accessLevel, name, result?.toObjectArgument(), true)
+}
 
+fun List<*>.toCollectionObject(): CollectionObject {
+    return map {
+       it?.toObjectArgument()
+    }.let {
+        CollectionObject(it)
+    }
+}
+
+fun Map<*, *>.toMapObject(): MapObject {
+    return entries.associate { (key, value) ->
+        key?.toObjectArgument() to value?.toObjectArgument()
+    }.let {
+        MapObject(it)
+    }
+}
+
+fun Any.toObj(): Obj {
+    val obj = this
+    val fields = ArrayList<FieldObject>()
+    javaClass.declaredFields
+            .filter { !(Modifier.isFinal(it.modifiers)) && it.declaringClass.name.startsWith("com.mparticle") }
+            .map { field ->
+                field.isAccessible = true
+                if (field.isAccessible) {
+                    val fieldValue = field.get(obj)
+                    field.toField(fieldValue)
+                } else {
+                    null
+                }
+            }
+            .forEach { fieldObject ->
+                fieldObject?.let { fields.add(it) }
+            }
+    javaClass.methods
+            .filter { it.isRelevant() }
+            .map { method ->
+                val methodName = method.name.run {
+                    val name = replace("get", "")
+                    "${name.substring(0, 1).toLowerCase()}${name.substring(1)}" +
+                            ""
+                }
+                val result = method.invoke(obj)
+                method.toField(result)
+            }
+            .forEach { fields.add(it) }
+    return Obj(fields)
+}
 
 fun Method.isRelevant(): Boolean {
     return !Modifier.isPrivate(modifiers) &&
@@ -191,6 +199,47 @@ fun Method.isRelevant(): Boolean {
             name.startsWith("get") &&
             declaringClass.name.startsWith("com.mparticle")
 }
+
+/**
+ * returns the ObjectArgument in either a Primitive/String value, if it
+ * represents a primitive or String, or a Map<String, Any> if it represents
+ * an MParticle object
+ *
+ * @param cleanMethodsOnly should getter names be normalied, i.e "getId" -> "id" when true
+ */
+fun ObjectArgument.toMapOrValue(cleanMethodsOnly: Boolean = true): Any {
+    return when (value) {
+        is Primitive -> (value as Primitive).value
+        is com.mparticle.shared.events.EnumObject -> (value as com.mparticle.shared.events.EnumObject).name
+        is Obj -> {
+            val obj = value as Obj
+            val objectMap = HashMap<String, Any?>()
+            obj.fields
+                    .filter {
+                        !cleanMethodsOnly || it.isMethod
+                    }
+                    .forEach {
+                        var fieldName = it.fieldName
+                        if (cleanMethodsOnly) {
+                            if (fieldName.startsWith("get")) {
+                                fieldName = fieldName.replace("get", "")
+                                fieldName = "${fieldName.substring(0, 1).toLowerCase()}${fieldName.substring(1)}"
+                            }
+                        }
+                        objectMap.put(fieldName, it.objectArgument?.toMapOrValue(cleanMethodsOnly))
+                    }
+            objectMap
+        }
+        is CollectionObject -> (value as CollectionObject).values.map {
+            it?.toMapOrValue()
+        }
+        is MapObject -> (value as MapObject).valuesMap.entries.associate { (key, value) ->
+            key?.toMapOrValue() to value?.toMapOrValue()
+        }
+    }
+}
+
+
 
 fun View.setChainClickable(id: Int?, displayCallback: ((Int) -> Unit)?) {
     background = android.support.v4.content.ContextCompat.getDrawable(context, android.R.color.holo_orange_light)?.apply {
@@ -259,8 +308,8 @@ fun MParticleUser.wrapper(): User {
     return User(id,
             userAttributes,
             userIdentities.entries.associate { it.key.name to it.value },
-            cart.printClass() as Map<String, Any?>,
-            consentState.printClass() as Map<String, Any?>,
+            cart.toObjectArgument() as Map<String, Any?>,
+            consentState.toObjectArgument() as Map<String, Any?>,
             isLoggedIn,
             firstSeenTime,
             lastSeenTime)

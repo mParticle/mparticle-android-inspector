@@ -22,14 +22,37 @@ class KitApiCall(val kitId: Int, var endpointName: String, var kitObjectArgument
 }
 
 @Serializable
-data class ObjectArgument(val className: String, val fullClassName: String, @Polymorphic val value: Any, val id: Int? = null, val isEnum: Boolean = false)
-//
-//class Value(val fieldName: String, val accessLevel: Int, val isPrimitive: Boolean, val primitiveValue: Any, val ObjectValue: List<ObjectArgument>) {
-//
-//    companion object {
-//        const val PRIVATE = 0
-//        const val PACKAGE_PRIVATE = 1
-//        const val PROTECTED = 2
-//        const val PUBLIC = 3
-//    }
-//}
+data class ObjectArgument(val fullClassName: String,
+                          @Polymorphic
+                          val value: ObjectValue,
+                          val id: Int? = null) {
+    val className = fullClassName.split(".").last()
+}
+
+sealed class ObjectValue
+
+@Serializable
+class Primitive(@Polymorphic val value: Any): ObjectValue()
+
+@Serializable
+class EnumObject(val name: String): ObjectValue()
+
+@Serializable
+class Obj(val fields: MutableList<FieldObject>): ObjectValue()
+
+@Serializable
+class CollectionObject(val values: List<ObjectArgument?>): ObjectValue()
+
+@Serializable
+class MapObject(val valuesMap: Map<ObjectArgument?, ObjectArgument?>): ObjectValue()
+
+
+@Serializable
+class FieldObject(val access: Int, val fieldName: String, val objectArgument: ObjectArgument?, val isMethod: Boolean) {
+    companion object {
+        const val PRIVATE = 0
+        const val PACKAGE_PRIVATE = 1
+        const val PROTECTED = 2
+        const val PUBLIC = 3
+    }
+}

@@ -12,11 +12,8 @@ import com.mparticle.inspector.Constants.Companion.SESSION_ID
 import com.mparticle.inspector.DataManager
 import com.mparticle.inspector.R
 import com.mparticle.inspector.customviews.JsonTextView
+import com.mparticle.inspector.utils.*
 import com.mparticle.shared.events.*
-import com.mparticle.inspector.utils.json
-import com.mparticle.inspector.utils.setChainClickable
-import com.mparticle.inspector.utils.setJsonHandling
-import com.mparticle.inspector.utils.visible
 import com.mparticle.inspector.viewholders.*
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.EventViewType.*
@@ -219,10 +216,11 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
                     text = "${argument.className}: "
                 }
                 argumentView.findViewById<JsonTextView>(R.id.value).apply {
-                    if (argument.value is Map<*,*>) {
-                        bindJson(JSONObject(argument.value as Map<*, *>))
+                    val argMap = argument.toMapOrValue(true)
+                    if (argMap is Map<*,*>) {
+                        bindJson(JSONObject(argMap as Map<*, *>))
                     } else {
-                       setText(argument.value.toString())
+                       setText(argMap.toString())
                     }
                 }
                 onHasConnections(argument.id) { async ->

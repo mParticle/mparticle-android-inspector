@@ -27,6 +27,15 @@ class Serializer {
             Int::class with Int.serializer()
             Double::class with Double.serializer()
             ObjectArgument::class with ObjectArgument.serializer()
+            Boolean::class with Boolean.serializer()
+            Long::class with Long.serializer()
+        }
+        polymorphic(ObjectValue::class) {
+            Primitive::class with Primitive.serializer()
+            EnumObject::class with EnumObject.serializer()
+            Obj::class with Obj.serializer()
+            MapObject::class with MapObject.serializer()
+            CollectionObject::class with CollectionObject.serializer()
         }
     }
 

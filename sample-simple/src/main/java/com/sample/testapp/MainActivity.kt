@@ -22,6 +22,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.math.absoluteValue
 
 class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListener, TaskSuccessListener, IdentityStateListener {
 
@@ -192,7 +193,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, TaskFailureListe
     internal var i = 0
     @Suppress("UNUSED_PARAMETER")
     fun logEvent(view: View) {
-        when (Random().nextInt() % 4) {
+        when (Random().nextInt().absoluteValue % 4) {
             0 -> MParticle.getInstance()?.logEvent(MPEvent.Builder("Event ${i++}").build())
             1 -> {
                 val product1 = Product.Builder("Name", "sku123", 2.0).brand("asdv").build()

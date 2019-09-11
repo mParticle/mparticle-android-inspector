@@ -5,7 +5,7 @@ import com.mparticle.identity.IdentityStateListener
 import com.mparticle.identity.MParticleUser
 import com.mparticle.inspector.utils.getMap
 import com.mparticle.shared.events.*
-import com.mparticle.inspector.utils.printClass
+import com.mparticle.inspector.utils.toObjectArgument
 import com.mparticle.inspector.utils.wrapper
 import com.mparticle.internal.InternalSession
 import com.mparticle.internal.listeners.GraphManager
@@ -60,7 +60,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
 
 
         val arguments = trackableObjects.map { argument ->
-            ObjectArgument(argument.obj.javaClass.simpleName, argument.obj.javaClass.name, argument.obj.printClass(), argument.trackingId)
+            argument.obj.toObjectArgument(argument.trackingId)
         }
         val status = when (used) {
             true -> Status.Green
@@ -85,7 +85,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         if (isExternal || objectOfInterest) {
             toTrackableObjects(id, objectList)
                     .map { argument ->
-                        ObjectArgument(argument.obj.javaClass.simpleName, argument.obj.javaClass.name, argument.obj.printClass(), argument.trackingId).copy()
+                        argument.obj.toObjectArgument(argument.trackingId)
                     }.also { arguments ->
                         ApiCall(methodName, arguments, System.currentTimeMillis(),id = id)
                                 .let { dto ->
