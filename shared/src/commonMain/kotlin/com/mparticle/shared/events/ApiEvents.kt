@@ -20,11 +20,21 @@ open class ApiCall(var endpoint: String,
     }
 
     fun getMethodName(): String {
-        return endpoint.split(".")[1].replace("()", "")
+        val split = endpoint.split(".")
+        return if (split.size > 1) {
+            split[1].replace("()", "")
+        } else {
+            "none?"
+        }
     }
 
     fun getClassName(): String {
-        return endpoint.split(".")[0]
+        val split = endpoint.split(".")
+        return if (split.size > 0) {
+            split[0]
+        } else {
+            "none?"
+        }
     }
 }
 

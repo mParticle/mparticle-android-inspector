@@ -72,11 +72,11 @@ kotlin {
     }
 
     js().compilations["main"].compileKotlinTask.kotlinOptions {
-        this.sourceMap = true
-        this.sourceMapEmbedSources = "always"
-        this.moduleKind = "umd"
-        this.noStdlib = true
-        this.metaInfo = false
-        this.main = "call"
+//        this.sourceMap = true
+//        this.sourceMapEmbedSources = "always"
+        this.moduleKind = "commonjs"
+//        this.noStdlib = true
+//        this.metaInfo = false
+//        this.main = "call"
     }
 }

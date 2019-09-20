@@ -13,6 +13,28 @@ class EventCollection(val list: List<@Polymorphic Event>)
 abstract class Event() {
     open val createdTime: Long = PlatformApis().getTimestamp()
     abstract val name: String
+
+    fun getShortName(): String {
+        return when (this) {
+            is NetworkRequest -> NETWORK
+            is Kit -> KIT
+            is KitApiCall -> KIT_API_CALL
+            is MessageEvent -> DB
+            is MessageTable -> DB
+            is ApiCall -> API_CALL
+            else -> NO_TITLE
+        }
+    }
+
+    companion object ShortTitle {
+        const val NETWORK = "Network"
+        const val KIT = "Kit"
+        const val KIT_API_CALL = "Kit API"
+        const val DB = "DB"
+        const val API_CALL = "API"
+        const val NO_TITLE = "no title :("
+    }
+
 }
 
 //@Serializable

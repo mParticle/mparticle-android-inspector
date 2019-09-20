@@ -7,12 +7,11 @@ import android.view.ViewGroup
 import com.mparticle.inspector.*
 import com.mparticle.shared.events.Status
 import com.mparticle.shared.events.*
-import com.mparticle.inspector.viewholders.*
+import com.mparticle.inspector.views.*
 import com.mparticle.shared.utils.Mutable
 import com.mparticle.inspector.extensions.visible
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.getDtoType
-import com.mparticle.shared.getShortName
 
 class ChainListAdapter(context: Context, dataManager: DataManager, displayCallback: (Int) -> Unit, startTime: Long, private var itemId: Int) : BaseListAdapter(context, startTime, displayCallback, dataManager) {
 

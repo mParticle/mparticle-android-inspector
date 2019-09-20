@@ -32,18 +32,6 @@ fun Event.getDtoType() : EventViewType {
     }
 }
 
-fun Event.getShortName(): String {
-    return when (this) {
-        is NetworkRequest -> "Network"
-        is Kit -> "Kit"
-        is KitApiCall -> "Kit API"
-        is MessageEvent -> "DB"
-        is MessageTable -> "DB"
-        is ApiCall -> "API"
-        else -> "no title :("
-    }
-}
-
 fun <K, V> MutableMap<K, V>.putIfEmpty(key: K, value: V) {
     if (!containsKey(key)) {
         put(key, value)

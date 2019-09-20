@@ -1,4 +1,4 @@
-package com.mparticle.inspector.viewholders
+package com.mparticle.inspector.views
 
 import android.support.v7.widget.RecyclerView
 import android.view.View

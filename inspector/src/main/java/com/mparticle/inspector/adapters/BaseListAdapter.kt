@@ -14,7 +14,7 @@ import com.mparticle.inspector.R
 import com.mparticle.inspector.customviews.JsonTextView
 import com.mparticle.inspector.extensions.*
 import com.mparticle.shared.events.*
-import com.mparticle.inspector.viewholders.*
+import com.mparticle.inspector.views.*
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.EventViewType.*
 import com.mparticle.shared.controllers.BaseController
@@ -161,6 +161,7 @@ abstract class BaseListAdapter(val context: Context, val startTime: Long, val di
             type.setOnClickListener {
                 obj.expanded = !obj.expanded
                 expand.visible(obj.expanded)
+
                 refreshDataObject(obj)
             }
             expand.visible(obj.expanded)

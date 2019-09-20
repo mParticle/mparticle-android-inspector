@@ -1,4 +1,4 @@
-package com.mparticle.inspector.viewholders
+package com.mparticle.inspector.views
 
 import android.view.View
 import android.view.ViewGroup

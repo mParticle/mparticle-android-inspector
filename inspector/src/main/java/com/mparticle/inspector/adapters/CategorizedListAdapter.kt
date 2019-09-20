@@ -4,8 +4,8 @@ import android.content.Context
 import android.support.v7.widget.RecyclerView
 import com.mparticle.inspector.DataManager
 import com.mparticle.inspector.extensions.visible
-import com.mparticle.inspector.viewholders.ItemViewHolder
-import com.mparticle.inspector.viewholders.TitleViewHolder
+import com.mparticle.inspector.views.ItemViewHolder
+import com.mparticle.inspector.views.TitleViewHolder
 import com.mparticle.shared.controllers.BaseController
 import com.mparticle.shared.events.CategoryTitle
 

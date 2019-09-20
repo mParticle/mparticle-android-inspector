@@ -20,7 +20,6 @@ import com.mparticle.shared.events.Event
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.ViewControllerManager
 import com.mparticle.shared.getDtoType
-import com.mparticle.shared.getShortName
 
 class InspectorView(val application: Context, val dataManager: DataManager, val startTime: Long, val viewControllerManager: ViewControllerManager) {
 

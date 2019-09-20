@@ -75,7 +75,7 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         }
     }
 
-    override fun onApiCalled(methodName: String, obj: Any?, objectList: List<Any>, isExternal: Boolean) {
+    override fun onApiCalled(methodName: String, objectList: List<Any>, isExternal: Boolean) {
         tryAddIdentityListener(methodName)
         val id = nextId()
         super.onApiCalled(id, methodName)
@@ -85,21 +85,21 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
                 val trackingId = track(id, obj)
                 obj.toObjectArgument()
             }
-            var objArg = when (obj) {
-                is Cart, is MParticleUser -> obj.toObjectArgument()
-                else -> null
-            }
-            val dto = ApiCall(methodName, arguments, System.currentTimeMillis(), objArg, id = id)
-            arguments.forEach { argument ->
-                argument.id?.let { id ->
-                    chainableEventDtos[id] = dto
-                }
-            }
-            if (isExternal) {
-                addItem(dto)
-            } else {
-                chainableEventDtos[id] = dto
-            }
+//            var objArg = when (obj) {
+//                is Cart, is MParticleUser -> obj.toObjectArgument()
+//                else -> null
+//            }
+//            val dto = ApiCall(methodName, arguments, System.currentTimeMillis(), objArg, id = id)
+//            arguments.forEach { argument ->
+//                argument.id?.let { id ->
+//                    chainableEventDtos[id] = dto
+//                }
+//            }
+//            if (isExternal) {
+//                addItem(dto)
+//            } else {
+//                chainableEventDtos[id] = dto
+//            }
         }
     }
 

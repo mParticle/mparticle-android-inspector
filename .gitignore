@@ -39,3 +39,4 @@ build
 
 #test results
 /testResults
+node_modules

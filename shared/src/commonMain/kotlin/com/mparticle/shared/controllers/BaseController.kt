@@ -1,6 +1,7 @@
 package com.mparticle.shared.controllers
 
 import com.mparticle.shared.events.Event
+import kotlin.js.JsName
 
 abstract class BaseController internal constructor() {
 
@@ -12,10 +13,12 @@ abstract class BaseController internal constructor() {
     private val removeListener: MutableList<((Int, Int) -> Unit)?> = ArrayList()
     private val listUpdatedListener: MutableList<((List<Event>) -> Unit)?> = ArrayList()
 
+    @JsName("onAdded")
     fun registerAddedListener(listener: (position: Int, item: Event) -> Unit) {
         addItemListeners.add(listener)
     }
 
+    @JsName("onRefreshed")
     fun registerRefreshListener(listener: (position: Int, item: Event) -> Unit) {
         refreshListeners.add(listener)
     }

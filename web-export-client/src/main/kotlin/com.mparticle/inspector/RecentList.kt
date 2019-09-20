@@ -1,12 +1,13 @@
 package com.mparticle.inspector
 
 import com.mparticle.shared.controllers.StreamController
+import com.mparticle.shared.events.ApiCall
 import com.mparticle.shared.events.Event
+import com.mparticle.shared.events.MessageEvent
+import com.mparticle.shared.events.NetworkRequest
+import kotlinx.html.DIV
 import kotlinx.html.js.onClickFunction
-import react.RBuilder
-import react.RComponent
-import react.RProps
-import react.RState
+import react.*
 import react.dom.*
 
 interface LanguageListProps : RProps {
@@ -16,26 +17,66 @@ interface LanguageListProps : RProps {
 
 class RecentListComponent : RComponent<LanguageListProps, RState>() {
     override fun RBuilder.render() {
-        ul("mdc-list mdc-list--two-line") {
-            props.data.forEach { item ->
-                li("mdc-list-item") {
-                    span("mdc-list-item__text") {
-                        Event.toListItem()
-                        span("mdc-list-item__primary-text") { +item.name }
-                        span("mdc-list-item__secondary-text") { +item.createdTime }
+        ul("nav-list") {
+            console.log("recent list display")
+            console.log("data count: ${props.data.size}")
+            props.data.forEach { event ->
+                event.getSpannable(this)
+//
+//                li("mdc-list-item") {
+//                    span("mdc-list-item__text") {
+//                        +"here"
+//                        event.getSpannable(this)
+////                        span ("mdc-list-item__primary-text") { +event.name }
+////                        span("mdc-list-item__secondary-text") { +event.createdTime }
+//                    }
+//                    attrs {
+//                        onClickFunction = {
+//                            props.block(event)
+//                        }
+//
+//                    }
+//                }
+            }
+        }
+    }
+
+
+
+    fun Event.getSpannable(builder: RBuilder): ReactElement {
+        val event = this
+        return builder.div(classes = "nav-item") {
+            shortName(event) {
+                div(classes = "item-title-holder") {
+                    span(classes = "item-title") {
+                        +event.name
                     }
-                    attrs {
-                        onClickFunction = {
-                            props.block(item)
+                }
+                when (event) {
+                    is ApiCall -> {
+                    }
+
+                    is NetworkRequest -> {
+                        span(classes = "content-subhead") {
+                            +(event.status.toString())
                         }
+                    }
+                    is MessageEvent -> {
+                    }
+                    else -> {
                     }
                 }
             }
         }
     }
 
-    fun Event.toListItem() {
-
+    fun RDOMBuilder<DIV>.shortName(event: Event, next: (RDOMBuilder<DIV>) -> Unit) {
+        div(classes = "short-nav-item-holder") {
+            span(classes = "short-nav-item") {
+                +"(${event.getShortName()}) "
+            }
+        }
+        next(this)
     }
 }
 

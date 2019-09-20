@@ -4,6 +4,7 @@ import com.mparticle.shared.events.*
 import com.mparticle.shared.EventViewType
 import com.mparticle.shared.getDtoType
 import com.mparticle.shared.utils.Mutable
+import kotlin.js.JsName
 
 class StreamController: BaseController() {
     var eventCountLimit = 100

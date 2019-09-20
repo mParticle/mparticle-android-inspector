@@ -4,6 +4,7 @@ import com.mparticle.shared.events.*
 import com.mparticle.shared.controllers.CategoryController
 import com.mparticle.shared.controllers.StreamController
 import com.mparticle.shared.utils.Mutable
+import kotlin.js.JsName
 import kotlin.jvm.JvmStatic
 
 class ViewControllerManager {
@@ -29,9 +30,12 @@ class ViewControllerManager {
         }
     }
 
+    @JsName("addEvents")
     fun addEvents(itemsJson: String) {
-
+        val manager = ViewControllerManager()
+        Serializer().deserialize(itemsJson).forEach { manager.addEvent(it) }
     }
+
 
     companion object {
         private var instance: ViewControllerManager? = null

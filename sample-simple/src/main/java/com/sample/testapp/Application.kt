@@ -6,12 +6,14 @@ import com.mparticle.MParticle
 import com.mparticle.MParticleOptions
 import com.mparticle.commerce.Product
 import com.mparticle.identity.*
+import com.mparticle.internal.Logger
 import java.util.*
 
 class TestAppApplication: Application(), IdentityStateListener, TaskFailureListener, TaskSuccessListener {
 
     override fun onCreate() {
         super.onCreate()
+//        Logger.setLogHandler(LogHandler())
         val options = MParticleOptions.builder(this)
                 .credentials("288e1ccd4cdca947913108770df5a12e", "J8iG1IgsRL7fZ9WqhcgZYxSUr3ay1MuA3W-hJFMWTNswkryhvkDt6ZT9XhCpoXQ7")
                 .logLevel(MParticle.LogLevel.VERBOSE)
