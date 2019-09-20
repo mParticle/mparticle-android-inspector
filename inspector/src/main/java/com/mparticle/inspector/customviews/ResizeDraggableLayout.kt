@@ -1,6 +1,5 @@
 package com.mparticle.inspector.customviews
 
-import android.app.AlertDialog
 import android.content.Context
 import android.os.Handler
 import android.util.AttributeSet
@@ -9,8 +8,6 @@ import android.widget.FrameLayout
 import android.widget.RelativeLayout
 import com.mparticle.inspector.R
 import com.mparticle.inspector.Inspector
-import android.widget.EditText
-import com.mparticle.inspector.Exporter
 
 
 class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): RelativeLayout(context, attrs) {
@@ -33,9 +30,7 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        logo = findViewById<View>(R.id.logo).apply {
-            setOnClickListener { showEmailPrompt() }
-        }
+        logo = findViewById<View>(R.id.logo)
         dragger = findViewById(R.id.dragger)
 
 
@@ -199,27 +194,6 @@ class ResizeDraggableLayout(context: Context, attrs: AttributeSet? = null): Rela
             rightMargin = (this@ResizeDraggableLayout.width * .35).toInt()
             topMargin = (this@ResizeDraggableLayout.height * .05).toInt()
         }
-    }
-
-    internal fun showEmailPrompt() {
-        val input = EditText(context)
-        val alertDialog = AlertDialog.Builder(context).create()
-        alertDialog.setTitle("Export")
-        alertDialog.setView(input)
-        alertDialog.setMessage("Enter email for export log")
-        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK") { _, _ ->
-            Exporter(Inspector.getInstance()?.widget?.objectMap!!).email(input.text.toString())
-        }
-        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel") { dialog, _ ->
-            dialog.dismiss()
-        }
-        alertDialog.show()
-        (input.layoutParams as FrameLayout.LayoutParams).apply {
-            var density = context.resources.displayMetrics.density
-            leftMargin = (density * 8 + .5).toInt()
-            rightMargin = (density * 8 + .5).toInt()
-        }
-        input.requestLayout()
     }
 
     private fun shouldHide(currentX: Float): Boolean {
