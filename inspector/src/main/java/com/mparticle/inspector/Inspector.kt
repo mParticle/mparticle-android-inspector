@@ -24,7 +24,7 @@ class Inspector private constructor(val application: Application, showOnStartup:
     companion object {
         private var instance: Inspector? = null
 
-        fun startWidget(appication: Application, showOnStartup: Boolean = false) {
+        internal fun startWidget(appication: Application, showOnStartup: Boolean = false) {
             if (canStart(appication)) {
                 if (instance == null) {
                     instance = Inspector(appication, showOnStartup)
@@ -32,6 +32,7 @@ class Inspector private constructor(val application: Application, showOnStartup:
             }
         }
 
+        @JvmStatic
         fun getInstance(): Inspector? {
             return instance
         }

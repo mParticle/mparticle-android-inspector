@@ -43,13 +43,13 @@ You can also make Inspector visible programatically. This is very useful if you 
 #### Kotlin
 
 ```kt
-WidgetApi.getInstance()?.visible = true
+Inspector.getInstance()?.visible = true
 ```
 
 #### Java
 
 ```java
-WidgetApi.Companion.getInstance().setVisible(true);
+Inspector.getInstance().setVisible(true);
 ```
 
 ### Exploring Inspector's Views
