@@ -49,9 +49,9 @@ dependencies {
 
     testImplementation 'junit:junit:4.12'
     testImplementation fileTree(dir: 'libs', include: ['testutils.aar'])
-    testImplementation 'org.powermock:powermock-module-junit4:1.6.2'
-    testImplementation 'org.powermock:powermock-api-mockito:1.6.2'
-    testImplementation 'org.powermock:powermock-core:1.6.2'
+    testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
+    testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'
+    testImplementation 'org.powermock:powermock-core:2.0.2'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.1.1'
 
 
