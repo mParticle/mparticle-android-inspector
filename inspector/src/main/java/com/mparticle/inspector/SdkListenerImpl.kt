@@ -228,6 +228,18 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
 
 
     override fun getKitName(id: Int): String {
+        //first try getting the name directly from the kit, using it's "getName()" method
+        //this should work everytime, but I'm not totally sure, since we don't want to add
+        //kit-base dependency
+        val kit = MParticle.getInstance()?.getKitInstance(id)
+        if (kit != null) {
+            val nameMethod = kit::class.java.getField("getName")
+            val kitName = nameMethod.get(kit) as? String
+            if (kitName != null) {
+                return kitName;
+            }
+        }
+        //if that doesn't work, use the MParticle.ServiceProvider name.
         for (field in MParticle.ServiceProviders::class.java.fields) {
             try {
                 if ((field.type == Int::class.javaPrimitiveType || field.type == Int::class.java) && field.getInt(null) == id) {
@@ -253,11 +265,11 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
             put("OptOut: ", { MParticle.getInstance()?.optOut })
             put("Install Referrer: ", { MParticle.getInstance()?.installReferrer })
             put("Environment: ", { MParticle.getInstance()?.environment?.name })
-            put("Location Tracking", { AccessUtils.isLocationTracking() })
+            put("Location Tracking", { MParticle.getInstance()?.isLocationTrackingEnabled })
             put("Auto Tracking", { MParticle.getInstance()?.isAutoTrackingEnabled })
             put("Device Performance", { MParticle.getInstance()?.isDevicePerformanceMetricsDisabled })
             put("Session Timeout", { "${MParticle.getInstance()?.sessionTimeout}s" })
-            put("App State", { AccessUtils.getAppState() })
+            put("App State", { Access.getAppState() })
         }.let {
             StateStatus("MParticle State", 0, { if (MParticle.getInstance() != null) Status.Green else Status.Red }, it)
         }
