@@ -1,8 +1,6 @@
 package com.mparticle.inspector
 
-import android.app.Application
 import android.content.Context
-import com.mparticle.internal.MPUtility
 import com.mparticle.mock.MockApplication
 import com.mparticle.mock.MockContext
 import junit.framework.Assert.assertNotNull
@@ -14,13 +12,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.Mockito
-import org.powermock.api.mockito.PowerMockito
-import org.powermock.core.classloader.annotations.PrepareForTest
-import org.powermock.modules.junit4.PowerMockRunner
 
-@RunWith(PowerMockRunner::class)
 class InspectorTest {
 
     private val mainThreadSurrogate = newSingleThreadContext("UI thread")
@@ -37,19 +29,21 @@ class InspectorTest {
     }
 
     @Test
-    @PrepareForTest(MPUtility::class)
     fun testStart() {
+        Inspector.mpUtilityWrapper.isAppDebugable = { true }
+        Inspector.mpUtilityWrapper.getProp = { "package.name" }
+
         val application = InspectorMockApplication(MutablePackageContext())
         makeUnstartable()
 
         //should start when app is debuggable
-        Mockito.`when`(MPUtility.isAppDebuggable(Mockito.any(Context::class.java))).thenReturn(true)
+        Inspector.mpUtilityWrapper.isAppDebugable = { true }
         Inspector.startWidget(application)
         assertNotNull(Inspector.getInstance())
 
         makeUnstartable()
 
-        Mockito.`when`(MPUtility.getProp(Mockito.anyString())).thenReturn("package.name")
+        Inspector.mpUtilityWrapper.getProp = { "package.name" }
         (application.baseContext as MutablePackageContext).packageName = "package.name"
 
         Inspector.startWidget(application)
@@ -60,9 +54,8 @@ class InspectorTest {
     private fun makeUnstartable() {
         val application = MockApplication(MockContext())
 
-        PowerMockito.mockStatic(MPUtility::class.java)
-        Mockito.`when`(MPUtility.isAppDebuggable(Mockito.any(Context::class.java))).thenReturn(false)
-        Mockito.`when`(MPUtility.getProp(Mockito.anyString())).thenReturn("")
+        Inspector.mpUtilityWrapper.isAppDebugable = { false }
+        Inspector.mpUtilityWrapper.getProp = { "" }
 
         //should not start
         Inspector.getInstance()?.stop()

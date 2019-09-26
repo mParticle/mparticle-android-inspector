@@ -17,12 +17,14 @@ class Inspector private constructor(val application: Application, showOnStartup:
     private var callbacks: Callbacks? = null
     var dimensions: Dimensions = Dimensions()
     var visible = false;
-    var currentActivity = WeakReference<Activity>(null)
+    var currentActivity = WeakReference<Activity?>(null)
     val startTime = System.currentTimeMillis()
     val sdkListener = SdkListenerImpl()
 
+
     companion object {
         private var instance: Inspector? = null
+        internal var mpUtilityWrapper = MPUtilityWrapper()
 
         internal fun startWidget(appication: Application, showOnStartup: Boolean = false) {
             if (canStart(appication)) {
@@ -38,8 +40,8 @@ class Inspector private constructor(val application: Application, showOnStartup:
         }
 
         private fun canStart(context: Context): Boolean {
-            return MPUtility.isAppDebuggable(context) ||
-                    context.packageName == MPUtility.getProp("debug.mparticle.listener")
+            return  mpUtilityWrapper.isAppDebugable(context) ||
+                    context.packageName == mpUtilityWrapper.getProp("debug.mparticle.listener")
         }
     }
 
@@ -88,7 +90,7 @@ class Inspector private constructor(val application: Application, showOnStartup:
         override fun onActivityPaused(activity: Activity?) {
             widget?.detach()
             if (activity === currentActivity.get()) {
-                currentActivity = WeakReference<Activity>(null)
+                currentActivity = WeakReference(null)
             }
         }
 
@@ -147,5 +149,14 @@ class Inspector private constructor(val application: Application, showOnStartup:
             layoutParams.topMargin = topMargin
             layoutParams.bottomMargin = bottomMargin
         }
+    }
+
+    /**
+     * added for testing purposes. recently Mockito started having problems statically mocking
+     * MPUtility (inconsistent stacktrace height -1, getResponseJson())
+     */
+    open class MPUtilityWrapper {
+        var isAppDebugable: (Context) -> Boolean = { context -> MPUtility.isAppDebuggable(context) }
+        var getProp: (String) -> String? = { property -> MPUtility.getProp(property)}
     }
 }
