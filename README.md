@@ -14,7 +14,7 @@ Inspector Gadget is a UI widget which attaches to the [mParticle Android SDK](ht
 In your app-level `build.gradle` file, add the following dependency:
 
 ```groovy
-implementation 'com.mparticle:android-inspector:0.7'
+implementation 'com.mparticle:android-inspector:0.8'
 ```
 
 > **Note**: You should not ship Inspector to a production app. For this reason you should only add the dependency to a debug or non-Google Play variant.
