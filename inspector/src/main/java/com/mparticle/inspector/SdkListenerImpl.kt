@@ -233,10 +233,14 @@ class SdkListenerImpl : GraphManager(), IdentityStateListener {
         //kit-base dependency
         val kit = MParticle.getInstance()?.getKitInstance(id)
         if (kit != null) {
-            val nameMethod = kit::class.java.getField("getName")
-            val kitName = nameMethod.get(kit) as? String
-            if (kitName != null) {
-                return kitName;
+            try {
+                val nameMethod = kit::class.java.getMethod("getName")
+                val kitName = nameMethod.invoke(kit) as? String
+                if (kitName != null) {
+                    return kitName;
+                }
+            } catch(_: Exception) {
+
             }
         }
         //if that doesn't work, use the MParticle.ServiceProvider name.
